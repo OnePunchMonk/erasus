@@ -10,7 +10,7 @@
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License: MIT"></a>
     <a href="#-test-status"><img src="https://img.shields.io/badge/tests-87%20passed-brightgreen.svg" alt="Tests"></a>
     <a href="#-supported-models"><img src="https://img.shields.io/badge/models-10%20architectures-purple.svg" alt="Models"></a>
-    <a href="#-strategies--selectors"><img src="https://img.shields.io/badge/strategies-20%20methods-orange.svg" alt="Strategies"></a>
+    <a href="#-strategies--selectors"><img src="https://img.shields.io/badge/strategies-27%20methods-orange.svg" alt="Strategies"></a>
   </p>
 </p>
 
@@ -18,7 +18,7 @@
 
 **Erasus** is a research-grade Python framework for **Machine Unlearning** across all major foundation model types. It surgically removes specific data, concepts, or behaviors from trained models — without the computational cost of full retraining.
 
-It supports **Vision-Language Models**, **Large Language Models**, **Diffusion Models**, **Audio Models**, and **Video Models** through a unified API backed by 20 unlearning strategies, 19 coreset selectors, and a comprehensive evaluation suite.
+It supports **Vision-Language Models**, **Large Language Models**, **Diffusion Models**, **Audio Models**, and **Video Models** through a unified API backed by 27 unlearning strategies, 19 coreset selectors, 7 loss functions, and a comprehensive evaluation suite with 15+ metrics.
 
 ---
 
@@ -46,14 +46,16 @@ Erasus operates in a three-stage pipeline:
 | Feature | Description |
 |---------|-------------|
 | 🎯 **Coreset-Driven Forgetting** | 19 coreset selectors (influence functions, CRAIG, herding, k-center, EL2N, TracIn, Data Shapley) reduce compute by up to 90% |
+| 🧩 **Ensemble Unlearning** | Combine strategies sequentially or via weight averaging for robust forgetting |
 | 📷📝 **Multimodal Decoupling** | Unlearn image-text associations without breaking visual or textual generalization |
 | 🛡️ **Utility Preservation** | Retain-Anchor loss + Fisher regularization constrain model drift on safe data |
 | 🔐 **Certified Removal** | Formal (ε, δ)-removal verification with PAC-style guarantees |
-| 📊 **Integrated Evaluation** | MIA, confidence, feature distance, perplexity, FID, 13+ metrics |
+| 📊 **Integrated Evaluation** | MIA, confidence, feature distance, perplexity, FID, activation analysis, backdoor detection, 15+ metrics |
 | 📈 **Visualization Suite** | Loss landscapes, embedding plots, gradient flow, interactive Plotly dashboards, HTML reports |
 | 🔌 **Model Agnostic** | Works with any PyTorch model + HuggingFace Transformers |
-| 🖥️ **CLI + Python API** | `erasus unlearn --config config.yaml` or full Python API |
-| 🧪 **Experiment Tracking** | Built-in W&B, MLflow, and local JSON tracking |
+| 🖥️ **CLI + Python API** | `erasus unlearn`, `erasus benchmark`, `erasus visualize`, or full Python API |
+| 🧪 **Experiment Tracking** | Built-in W&B, MLflow, local JSON tracking + HPO with Optuna |
+| 📐 **Theoretical Bounds** | PAC-learning utility bounds, influence bounds, certified unlearning radius |
 
 ---
 
@@ -113,7 +115,7 @@ model = ...  # Any PyTorch model
 # 2. Create unlearner
 unlearner = ErasusUnlearner(
     model=model,
-    strategy="gradient_ascent",    # 20 strategies available
+    strategy="gradient_ascent",    # 27 strategies available
     selector="influence",          # 19 selectors available
     device="cuda",
 )
@@ -169,22 +171,31 @@ erasus unlearn --config configs/default.yaml
 
 # Evaluate results
 erasus evaluate --config configs/default.yaml --checkpoint model.pt
+
+# Run benchmarks
+erasus benchmark --strategies gradient_ascent,scrub --selectors random,influence
+
+# Generate visualizations
+erasus visualize --type embeddings --method tsne --output embeddings.png
+erasus visualize --type comparison --output comparison.png
+erasus visualize --type report --output report.html
 ```
 
 ---
 
 ## 🔧 Strategies & Selectors
 
-### Unlearning Strategies (20)
+### Unlearning Strategies (27)
 
 | Category | Strategies |
-|----------|-----------|
-| **Gradient Methods** | Gradient Ascent, SCRUB (CVPR 2024), Fisher Forgetting, Negative Gradient, Modality Decoupling |
-| **Parameter Methods** | LoRA Unlearning, Sparse-Aware, Mask-Based, Neuron Pruning |
-| **Data Methods** | Amnesiac ML, SISA, Certified Removal |
-| **LLM-Specific** | SSD (NeurIPS 2024), Token Masking, Embedding Alignment, Causal Tracing |
-| **Diffusion-Specific** | Concept Erasure (ICCV 2023), Noise Injection, U-Net Surgery |
-| **VLM-Specific** | Contrastive Unlearning, Cross-Modal Decoupling |
+|----------|------------|
+| **Gradient Methods** | Gradient Ascent, SCRUB (CVPR 2024), Fisher Forgetting, Negative Gradient, Modality Decoupling, **Saliency Unlearning** |
+| **Parameter Methods** | LoRA Unlearning, Sparse-Aware, Mask-Based, Neuron Pruning, **Layer Freezing** |
+| **Data Methods** | Amnesiac ML, SISA, Certified Removal, **Knowledge Distillation** |
+| **LLM-Specific** | SSD (NeurIPS 2024), Token Masking, Embedding Alignment, Causal Tracing, **Attention Surgery** |
+| **Diffusion-Specific** | Concept Erasure (ICCV 2023), Noise Injection, U-Net Surgery, **Timestep Masking**, **Safe Latents** |
+| **VLM-Specific** | Contrastive Unlearning, Cross-Modal Decoupling, **Attention Unlearning** |
+| **Ensemble** | Sequential / Averaged multi-strategy combination |
 
 ### Coreset Selectors (19)
 
@@ -208,9 +219,9 @@ results = suite.run(model, forget_loader, retain_loader)
 
 | Category | Metrics |
 |----------|---------|
-| **Forgetting** | MIA (+ LiRA, LOSS variants), Confidence, Feature Distance |
+| **Forgetting** | MIA (+ LiRA, LOSS variants), Confidence, Feature Distance, **Activation Analysis**, **Backdoor ASR** |
 | **Utility** | Accuracy, Perplexity, Retrieval (R@1/5/10), FID |
-| **Efficiency** | Time Complexity, Memory Usage |
+| **Efficiency** | Time Complexity, Memory Usage, **Speedup Ratio**, **FLOPs Estimation** |
 | **Privacy** | Differential Privacy (ε, δ) |
 
 ---
@@ -224,6 +235,8 @@ from erasus.visualization import (
     GradientVisualizer,
     ReportGenerator,
 )
+from erasus.visualization.attention import AttentionVisualizer
+from erasus.visualization.comparisons import ComparisonVisualizer
 
 # t-SNE / PCA embeddings
 viz = EmbeddingVisualizer(model)
@@ -232,6 +245,15 @@ viz.plot(data_loader, method="tsne")
 # Loss landscape
 landscape = LossLandscapeVisualizer(model)
 landscape.plot_2d_contour(data_loader)
+
+# Attention heatmaps (before vs. after)
+attn_viz = AttentionVisualizer(model_after)
+attn_viz.plot_attention_comparison(inputs, model_before)
+
+# Before/after comparisons
+comp = ComparisonVisualizer()
+comp.plot_prediction_shift(model_before, model_after, forget_loader)
+comp.plot_metric_comparison(metrics_before, metrics_after)
 
 # HTML report
 report = ReportGenerator("Unlearning Report")
@@ -256,12 +278,45 @@ stat_verifier = UnlearningVerifier(significance=0.05)
 tests = stat_verifier.verify_all(model, forget_loader, retain_loader)
 ```
 
+### Theoretical Bounds
+
+```python
+from erasus.certification.bounds import TheoreticalBounds
+
+# PAC-learning utility bound
+bounds = TheoreticalBounds.pac_utility_bound(
+    n_total=50000, n_forget=500, n_retain=49500, delta=0.05, model=model,
+)
+print(f"Utility drop bound: {bounds['pac_utility_drop_bound']:.4f}")
+
+# Certified unlearning radius
+radius = TheoreticalBounds.unlearning_radius(
+    epsilon=1.0, delta=1e-5, n_forget=500,
+)
+print(f"Certified radius: {radius['certified_radius']:.4f}")
+```
+
+---
+
+## 📉 Loss Functions
+
+| Loss | Description |
+|------|-------------|
+| **Retain Anchor** | Cross-entropy on retain data to preserve utility |
+| **Contrastive** | CLIP-style contrastive loss for VLM alignment |
+| **KL Divergence** | Distribution matching between models |
+| **MMD** | Maximum Mean Discrepancy for distribution comparison |
+| **Fisher Regularization** | Fisher information-weighted parameter penalty |
+| **Adversarial** | GAN-style loss for indistinguishable forget/retain outputs |
+| **Triplet** | Push forget embeddings away from retain-set anchors |
+| **L2 Regularization** | Simple weight-drift penalty |
+
 ---
 
 ## 🧪 Experiment Tracking
 
 ```python
-from erasus.experiments import ExperimentTracker
+from erasus.experiments import ExperimentTracker, HyperparameterSearch, AblationStudy
 
 # Supports: "local", "wandb", "mlflow"
 with ExperimentTracker("clip_unlearning", backend="wandb") as tracker:
@@ -269,6 +324,19 @@ with ExperimentTracker("clip_unlearning", backend="wandb") as tracker:
     result = unlearner.fit(...)
     tracker.log_metrics({"mia_auc": 0.52, "accuracy": 0.94})
     tracker.log_model(model)
+
+# Hyperparameter search (Optuna or random fallback)
+search = HyperparameterSearch(
+    objective_fn=my_objective,
+    param_space={"lr": {"type": "float", "low": 1e-5, "high": 1e-2, "log": True}},
+    n_trials=50,
+)
+best = search.run()
+
+# Ablation studies
+ablation = AblationStudy(base_config={...}, run_fn=run_trial)
+ablation.run_full_ablation({"lr": [1e-3, 1e-4, 1e-5], "strategy": ["ga", "scrub"]})
+print(ablation.summary())
 ```
 
 ---
@@ -279,18 +347,18 @@ with ExperimentTracker("clip_unlearning", backend="wandb") as tracker:
 erasus/
 ├── core/           # Base classes, registry, config, types
 ├── unlearners/     # High-level API (7 modality-specific unlearners)
-├── strategies/     # 20 unlearning algorithms (gradient, parameter, data, LLM, diffusion, VLM)
+├── strategies/     # 27 unlearning algorithms (gradient, parameter, data, LLM, diffusion, VLM, ensemble)
 ├── selectors/      # 19 coreset selection methods (gradient, geometry, learning, ensemble)
-├── metrics/        # 13+ evaluation metrics (forgetting, utility, efficiency, privacy)
-├── losses/         # Retain-anchor, contrastive, KL, MMD, custom
-├── visualization/  # Embeddings, loss surfaces, gradients, reports, interactive
+├── metrics/        # 15+ evaluation metrics (forgetting, utility, efficiency, privacy)
+├── losses/         # 8 loss functions (retain-anchor, Fisher, adversarial, triplet, KL, MMD, L2)
+├── visualization/  # Embeddings, loss surfaces, gradients, attention heatmaps, comparisons, reports
 ├── data/           # Dataset loaders (TOFU, WMDP, COCO, I2P, CC), preprocessing, partitioning
 ├── models/         # 10 model wrappers (VLM, LLM, diffusion, audio, video)
 ├── privacy/        # DP mechanisms, privacy accountant, certificates
-├── certification/  # Certified removal, statistical verification
-├── experiments/    # W&B / MLflow / local tracking
-├── cli/            # Command-line interface
-└── utils/          # Checkpointing, distributed, helpers, logging
+├── certification/  # Certified removal, statistical verification, theoretical bounds
+├── experiments/    # W&B / MLflow / local tracking, HPO, ablation studies
+├── cli/            # Command-line interface (unlearn, evaluate, benchmark, visualize)
+└── utils/          # Checkpointing, distributed, helpers, logging, callbacks, early stopping
 ```
 
 ---
@@ -330,7 +398,7 @@ bash scripts/run_benchmarks.sh
 ## ✅ Test Status
 
 ```
-87 tests passed ✅  |  0 failed  |  18.5s
+87 tests passed ✅  |  0 failed  |  26s
 ```
 
 ```bash
@@ -374,14 +442,16 @@ Erasus integrates and builds upon these key works:
 
 - [x] Core framework (base classes, registry, config)
 - [x] 10 model architectures
-- [x] 20 unlearning strategies
+- [x] 27 unlearning strategies (gradient, parameter, data, LLM, diffusion, VLM, ensemble)
 - [x] 19 coreset selectors
-- [x] 13+ evaluation metrics
-- [x] Visualization suite
-- [x] CLI (`erasus unlearn`, `erasus evaluate`)
-- [x] Certification & privacy modules
-- [x] Experiment tracking (W&B, MLflow, local)
+- [x] 15+ evaluation metrics (forgetting, utility, efficiency, privacy)
+- [x] 8 loss functions (Fisher, adversarial, triplet, L2, retain-anchor, KL, MMD, contrastive)
+- [x] Visualization suite (embeddings, landscapes, gradients, attention, comparisons, reports)
+- [x] CLI (`erasus unlearn`, `erasus evaluate`, `erasus benchmark`, `erasus visualize`)
+- [x] Certification & privacy modules + theoretical bounds (PAC, influence, certified radius)
+- [x] Experiment tracking (W&B, MLflow, local) + HPO + ablation studies
 - [x] Benchmark runners (TOFU, WMDP)
+- [x] Callbacks & early stopping
 - [x] 87 passing tests
 - [ ] Additional model architectures (Flamingo, T5, DALL-E, Wav2Vec)
 - [ ] HuggingFace Hub integration

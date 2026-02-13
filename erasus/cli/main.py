@@ -41,6 +41,18 @@ def main() -> None:
     add_unlearn(subparsers)
     add_evaluate(subparsers)
 
+    # Benchmark sub-command
+    from erasus.cli.benchmark import add_benchmark_args, run_benchmark
+    benchmark_parser = subparsers.add_parser("benchmark", help="Run benchmarks.")
+    add_benchmark_args(benchmark_parser)
+    benchmark_parser.set_defaults(func=run_benchmark)
+
+    # Visualize sub-command
+    from erasus.cli.visualize import add_visualize_args, run_visualize
+    visualize_parser = subparsers.add_parser("visualize", help="Generate visualizations.")
+    add_visualize_args(visualize_parser)
+    visualize_parser.set_defaults(func=run_visualize)
+
     # Legacy --config support (redirect to unlearn)
     parser.add_argument(
         "--config", "-c", type=str, default=None,
