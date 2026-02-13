@@ -1,0 +1,4 @@
+# CRAIG (Gradient Matching) Selector Configuration
+selector: "grad_match"
+prune_ratio: 0.1
+selector_kwargs: {}

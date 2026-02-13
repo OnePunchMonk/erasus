@@ -1,0 +1,7 @@
+# Influence Function Selector Configuration
+selector: "influence"
+prune_ratio: 0.1
+selector_kwargs:
+  approximation: "lissa"
+  damping: 0.01
+  num_samples: 100

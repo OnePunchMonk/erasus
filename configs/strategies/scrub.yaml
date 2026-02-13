@@ -1,0 +1,6 @@
+# SCRUB Strategy Configuration
+strategy: "scrub"
+strategy_kwargs:
+  kl_weight: 1.0
+  l2_weight: 0.01
+  lr: 1.0e-4

@@ -1,0 +1,35 @@
+# =============================================================
+# ERASUS — Default Configuration
+# =============================================================
+# Copy this file and modify for your experiment.
+#
+# Usage:
+#   erasus unlearn --config configs/default.yaml
+#   erasus unlearn --config configs/default.yaml --device cpu
+# =============================================================
+
+# Model
+model_name: "openai/clip-vit-base-patch32"
+model_type: "vlm"        # vlm | llm | diffusion | audio | video
+device: "cuda"
+
+# Selector
+selector: "influence"     # influence | tracin | gradient_norm | kcenter | herding | random | none
+prune_ratio: 0.1          # Fraction of forget set to keep as coreset (0.0–1.0)
+selector_kwargs: {}
+
+# Strategy
+strategy: "modality_decoupling"  # gradient_ascent | modality_decoupling | scrub | ssd | etc.
+strategy_kwargs:
+  vision_lr: 1.0e-5
+  text_lr: 1.0e-4
+  alignment_weight: 0.1
+
+# Training
+epochs: 50
+batch_size: 32
+lr: 1.0e-4
+
+# Logging
+log_dir: null
+wandb_project: null
