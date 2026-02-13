@@ -35,6 +35,26 @@ from erasus.strategies.diffusion_specific.unet_surgery import UNetSurgeryStrateg
 
 # VLM-specific
 from erasus.strategies.vlm_specific.contrastive_unlearning import ContrastiveUnlearningStrategy
+from erasus.strategies.vlm_specific.attention_unlearning import AttentionUnlearningStrategy
+
+# New gradient methods
+from erasus.strategies.gradient_methods.saliency_unlearning import SaliencyUnlearningStrategy
+
+# New parameter methods
+from erasus.strategies.parameter_methods.layer_freezing import LayerFreezingStrategy
+
+# New data methods
+from erasus.strategies.data_methods.knowledge_distillation import KnowledgeDistillationStrategy
+
+# New LLM-specific
+from erasus.strategies.llm_specific.attention_surgery import AttentionSurgeryStrategy
+
+# New diffusion-specific
+from erasus.strategies.diffusion_specific.timestep_masking import TimestepMaskingStrategy
+from erasus.strategies.diffusion_specific.safe_latents import SafeLatentsStrategy
+
+# Ensemble
+from erasus.strategies.ensemble_strategy import EnsembleStrategy
 
 __all__ = [
     "GradientAscentStrategy",
@@ -42,19 +62,27 @@ __all__ = [
     "SCRUBStrategy",
     "FisherForgettingStrategy",
     "NegativeGradientStrategy",
+    "SaliencyUnlearningStrategy",
     "LoRAUnlearningStrategy",
     "SparseAwareUnlearningStrategy",
     "MaskBasedUnlearningStrategy",
     "NeuronPruningStrategy",
+    "LayerFreezingStrategy",
     "AmnesiacUnlearningStrategy",
     "SISAStrategy",
     "CertifiedRemovalStrategy",
+    "KnowledgeDistillationStrategy",
     "SelectiveSynapticDampeningStrategy",
     "TokenMaskingStrategy",
     "EmbeddingAlignmentStrategy",
     "CausalTracingStrategy",
+    "AttentionSurgeryStrategy",
     "ConceptErasureStrategy",
     "NoiseInjectionStrategy",
     "UNetSurgeryStrategy",
+    "TimestepMaskingStrategy",
+    "SafeLatentsStrategy",
     "ContrastiveUnlearningStrategy",
+    "AttentionUnlearningStrategy",
+    "EnsembleStrategy",
 ]
