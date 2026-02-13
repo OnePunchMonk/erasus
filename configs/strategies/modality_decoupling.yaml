@@ -1,0 +1,6 @@
+# Modality Decoupling Strategy Configuration
+strategy: "modality_decoupling"
+strategy_kwargs:
+  vision_lr: 1.0e-5
+  text_lr: 1.0e-4
+  alignment_weight: 0.1

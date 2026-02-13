@@ -1,0 +1,4 @@
+# Auto-Selector Configuration
+selector: "auto"
+prune_ratio: 0.1
+selector_kwargs: {}

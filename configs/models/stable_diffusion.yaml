@@ -1,0 +1,17 @@
+# Stable Diffusion Configuration
+model_name: "runwayml/stable-diffusion-v1-5"
+model_type: "diffusion"
+device: "cuda"
+
+selector: "none"
+prune_ratio: 1.0
+selector_kwargs: {}
+
+strategy: "concept_erasure"
+strategy_kwargs:
+  lr: 1.0e-5
+  retain_every: 5
+
+epochs: 100
+batch_size: 1
+lr: 1.0e-5

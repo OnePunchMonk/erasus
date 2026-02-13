@@ -1,0 +1,16 @@
+# LLaMA Model Configuration
+model_name: "meta-llama/Llama-2-7b-hf"
+model_type: "llm"
+device: "cuda"
+
+selector: "gradient_norm"
+prune_ratio: 0.1
+selector_kwargs: {}
+
+strategy: "gradient_ascent"
+strategy_kwargs:
+  lr: 1.0e-5
+
+epochs: 10
+batch_size: 8
+lr: 1.0e-5

@@ -1,0 +1,21 @@
+# CLIP Model Configuration
+model_name: "openai/clip-vit-base-patch32"
+model_type: "vlm"
+device: "cuda"
+
+selector: "influence"
+prune_ratio: 0.1
+selector_kwargs:
+  approximation: "lissa"
+  damping: 0.01
+  num_samples: 100
+
+strategy: "modality_decoupling"
+strategy_kwargs:
+  vision_lr: 1.0e-5
+  text_lr: 1.0e-4
+  alignment_weight: 0.1
+
+epochs: 50
+batch_size: 32
+lr: 1.0e-4
