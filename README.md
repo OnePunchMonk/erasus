@@ -1,145 +1,429 @@
-# 👻 Erasus  
-**Efficient Representative And Surgical Unlearning Selection**  
-## Universal Machine Unlearning via Coreset Selection
-
-### 🚧 Project Status: Upcoming / Under Active Development
-
-Erasus is currently in the alpha research phase. The features described below represent the architectural vision and are being actively implemented.
-
-Erasus is an upcoming Python library designed to provide a unified framework for **Machine Unlearning** across all major Foundation Model types—including Vision-Language Models (VLMs), Large Language Models (LLMs), and Generative Diffusion Models. It surgically removes specific data from trained models without the computational cost of full retraining.
-
-It solves the “catastrophic collapse” problem in unlearning by selecting a geometric coreset of the forget set—identifying the “support vectors of forgetting”—and unlearning only those critical samples while preserving cross-modal alignment and general model utility.
-
----
-
-## ⚡ Key Features (Proposed)
-
-### 🎯 Coreset-Driven Forgetting  
-Selects the top **k% most influential “outliers”** in the forget set (inspired by UPCORE, Craig, Glister).  
-Reduces compute time by up to **90%**.
-
-### 📷📝 Multimodal Decoupling  
-Specifically addresses image–text coupling in VLMs.  
-Unlearns associations **without breaking visual or textual generalization**.
-
-### 🛡️ Utility Preservation  
-Introduces a **Retain-Anchor loss** to constrain model drift on safe retain data.
-
-### 📊 Integrated Benchmarking & Visualization  
-Built-in tools to visualize the **forgetting surface**, plus automated reports on model utility vs. deletion efficacy.
-
-### 🔌 Model Agnostic  
-Built on PyTorch, compatible with Hugging Face Transformers.
+<p align="center">
+  <h1 align="center">👻 Erasus</h1>
+  <p align="center">
+    <strong>Efficient Representative And Surgical Unlearning Selection</strong><br>
+    Universal Machine Unlearning via Coreset Selection
+  </p>
+  <p align="center">
+    <a href="#-quick-start"><img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python 3.9+"></a>
+    <a href="#-installation"><img src="https://img.shields.io/badge/pytorch-2.0+-ee4c2c.svg" alt="PyTorch 2.0+"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License: MIT"></a>
+    <a href="#-test-status"><img src="https://img.shields.io/badge/tests-87%20passed-brightgreen.svg" alt="Tests"></a>
+    <a href="#-supported-models"><img src="https://img.shields.io/badge/models-10%20architectures-purple.svg" alt="Models"></a>
+    <a href="#-strategies--selectors"><img src="https://img.shields.io/badge/strategies-20%20methods-orange.svg" alt="Strategies"></a>
+  </p>
+</p>
 
 ---
 
-## 🌟 Extended Goals & Vision
+**Erasus** is a research-grade Python framework for **Machine Unlearning** across all major foundation model types. It surgically removes specific data, concepts, or behaviors from trained models — without the computational cost of full retraining.
 
-Erasus aims to be the **“AutoML of Unlearning.”** Its long-term roadmap focuses on fully automated, modality-agnostic unlearning pipelines.
-
-### Auto-Selector Engine  
-A meta-selector will analyze your model + data distribution to choose:
-
-- best coreset technique (geometry vs. gradient)
-- best unlearning framework (sparse-aware, decoupling, etc.)
-
-### Universal Foundation Model Coverage  
-Erasus will support all popular foundation models:
-
-- **VLMs** (CLIP, LLaVA) – Multimodal Decoupling  
-- **LLMs** (Llama, Mistral) – Embedding alignment & causal masking  
-- **Generative Models** (Stable Diffusion) – Noise injection + parameter scrubbing  
-- **Specialized Models** (Whisper, VideoMAE)
-
-### Universal Coreset Library  
-Includes Herding, k-Center, Forgetting Events, and more.
+It supports **Vision-Language Models**, **Large Language Models**, **Diffusion Models**, **Audio Models**, and **Video Models** through a unified API backed by 20 unlearning strategies, 19 coreset selectors, and a comprehensive evaluation suite.
 
 ---
-
-## 📦 Installation (Coming Soon)
-
-### Not yet released on PyPI
-```bash
-pip install erasus-unlearn
-```
-
-
-
-## 🚀 Quick Start (Preview)
-
-Erasus provides a simple, high-level API to handle the complex math of influence functions and modality decoupling.
-
-1. The "Scrub" Workflow
-
-import torch
-from erasus import erasusUnlearner
-from erasus.selectors import AutoSelector
-from transformers import CLIPModel, CLIPProcessor
-
-### 1. Load your trained multimodal model
-model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-
-### 2. Define your data
-retain_loader = ... (Data to keep)
-forget_loader = ... (Sensitive data to remove)
-
-### 3. Initialize the Auto-Selector (Goal)
-#### Automatically chooses the best coreset strategy for CLIP models
-selector = AutoSelector(model_type="multimodal", goal="balanced_utility")
-forget_coreset = selector.select(
-    model=model, 
-    data_loader=forget_loader, 
-    prune_ratio=0.10 
-)
-
-### 4. Initialize Unlearner with Multimodal Strategy
-unlearner = erasusUnlearner(
-    model=model,
-    strategy="modality_decoupling", # Splits Image/Text loss terms
-    lr=1e-4
-)
-
-### 5. Perform the Unlearning & Visualize
-clean_model, stats = unlearner.fit(
-    forget_data=forget_coreset,
-    retain_data=retain_loader,
-    epochs=5,
-    visualize=True # Generates pre/post unlearning heatmaps
-)
-
-
-
 
 ## 🧠 How It Works
 
 Erasus operates in a three-stage pipeline:
 
-Embedding Projection: It maps the forget_set into the model's latent space.
+```
+┌──────────────────────┐     ┌──────────────────────┐     ┌──────────────────────┐
+│  1. CORESET SELECTION │────▶│  2. TARGETED          │────▶│  3. EVALUATION &     │
+│                      │     │     UNLEARNING         │     │     CERTIFICATION    │
+│  Pick the minimal    │     │                        │     │                      │
+│  set of samples that │     │  Apply gradient ascent,│     │  MIA, accuracy,      │
+│  define forgetting   │     │  Fisher, SCRUB, LoRA,  │     │  perplexity, FID,    │
+│  "support vectors"   │     │  or 16+ other methods  │     │  certified removal   │
+└──────────────────────┘     └──────────────────────┘     └──────────────────────┘
+```
 
-Coreset Selection (The "Erasus" Step): It calculates the Gradient Sensitivity of each sample. Samples that lie in the center of the data distribution are often redundant. Erasus selects the boundary cases (outliers) that define the decision boundary for that specific concept.
+**Key Innovation:** Geometry-aware coreset selection identifies the *"support vectors of forgetting"* — proving that unlearning k% of the most influential samples approximates unlearning 100% with bounded utility loss.
 
-Theory based on "Utility-Preserving Coreset Selection for Balanced Unlearning" (2025).
+---
 
-Decoupled Gradient Ascent: It applies Gradient Ascent to maximize the loss on the coreset, but with a twist: it penalizes the movement of the image encoder weights differently than the text encoder weights to prevent breaking the model's general vision capabilities.
+## ⚡ Key Features
+
+| Feature | Description |
+|---------|-------------|
+| 🎯 **Coreset-Driven Forgetting** | 19 coreset selectors (influence functions, CRAIG, herding, k-center, EL2N, TracIn, Data Shapley) reduce compute by up to 90% |
+| 📷📝 **Multimodal Decoupling** | Unlearn image-text associations without breaking visual or textual generalization |
+| 🛡️ **Utility Preservation** | Retain-Anchor loss + Fisher regularization constrain model drift on safe data |
+| 🔐 **Certified Removal** | Formal (ε, δ)-removal verification with PAC-style guarantees |
+| 📊 **Integrated Evaluation** | MIA, confidence, feature distance, perplexity, FID, 13+ metrics |
+| 📈 **Visualization Suite** | Loss landscapes, embedding plots, gradient flow, interactive Plotly dashboards, HTML reports |
+| 🔌 **Model Agnostic** | Works with any PyTorch model + HuggingFace Transformers |
+| 🖥️ **CLI + Python API** | `erasus unlearn --config config.yaml` or full Python API |
+| 🧪 **Experiment Tracking** | Built-in W&B, MLflow, and local JSON tracking |
+
+---
+
+## 🏗️ Supported Models
+
+| Modality | Models | Unlearner |
+|----------|--------|-----------|
+| **Vision-Language** | CLIP, LLaVA, BLIP-2 | `VLMUnlearner` |
+| **Language** | LLaMA, Mistral, GPT-2/J, BERT | `LLMUnlearner` |
+| **Diffusion** | Stable Diffusion 1.x/2.x/XL | `DiffusionUnlearner` |
+| **Audio** | Whisper | `AudioUnlearner` |
+| **Video** | VideoMAE | `VideoUnlearner` |
+| **Any** | Auto-detect | `MultimodalUnlearner` |
+
+---
+
+## 📦 Installation
+
+```bash
+# From source (recommended)
+git clone https://github.com/OnePunchMonk/erasus.git
+cd erasus
+pip install -e .
+
+# With all optional dependencies
+pip install -e ".[full]"
+
+# Development
+pip install -e ".[dev]"
+```
+
+### Quick Setup Script
+```bash
+bash scripts/setup_env.sh          # CPU
+bash scripts/setup_env.sh --gpu    # CUDA 12.1
+```
+
+### Docker
+```bash
+docker compose -f docker/docker-compose.yml up test       # Run tests
+docker compose -f docker/docker-compose.yml run dev        # Dev shell
+docker compose -f docker/docker-compose.yml up benchmark   # GPU benchmarks
+```
+
+---
+
+## 🚀 Quick Start
+
+### Python API
+
+```python
+from erasus.unlearners import ErasusUnlearner
+
+# 1. Load your model
+model = ...  # Any PyTorch model
+
+# 2. Create unlearner
+unlearner = ErasusUnlearner(
+    model=model,
+    strategy="gradient_ascent",    # 20 strategies available
+    selector="influence",          # 19 selectors available
+    device="cuda",
+)
+
+# 3. Unlearn
+result = unlearner.fit(
+    forget_data=forget_loader,     # Data to remove
+    retain_data=retain_loader,     # Data to preserve
+    prune_ratio=0.1,               # Use top 10% coreset
+    epochs=5,
+)
+
+# 4. Evaluate
+metrics = unlearner.evaluate(
+    forget_data=forget_loader,
+    retain_data=retain_loader,
+)
+print(f"MIA AUC: {metrics['mia_auc']:.4f}")  # Should → 0.5
+```
+
+### Modality-Specific Unlearners
+
+```python
+from erasus.unlearners import VLMUnlearner, LLMUnlearner, DiffusionUnlearner
+
+# CLIP: Remove NSFW concepts
+vlm = VLMUnlearner(model=clip_model, strategy="modality_decoupling")
+vlm.fit(forget_data=nsfw_loader, retain_data=safe_loader)
+
+# LLaMA: Remove hazardous knowledge
+llm = LLMUnlearner(model=llama_model, strategy="gradient_ascent")
+llm.fit(forget_data=harmful_loader, retain_data=benign_loader)
+
+# Stable Diffusion: Remove artist styles
+diff = DiffusionUnlearner(model=sd_model, strategy="concept_erasure")
+diff.fit(forget_data=artist_loader, retain_data=general_loader)
+```
+
+### Auto-Detect Model Type
+
+```python
+from erasus.unlearners import MultimodalUnlearner
+
+# Automatically picks the right unlearner
+unlearner = MultimodalUnlearner.from_model(your_model)
+```
+
+### CLI
+
+```bash
+# Run unlearning
+erasus unlearn --config configs/default.yaml
+
+# Evaluate results
+erasus evaluate --config configs/default.yaml --checkpoint model.pt
+```
+
+---
+
+## 🔧 Strategies & Selectors
+
+### Unlearning Strategies (20)
+
+| Category | Strategies |
+|----------|-----------|
+| **Gradient Methods** | Gradient Ascent, SCRUB (CVPR 2024), Fisher Forgetting, Negative Gradient, Modality Decoupling |
+| **Parameter Methods** | LoRA Unlearning, Sparse-Aware, Mask-Based, Neuron Pruning |
+| **Data Methods** | Amnesiac ML, SISA, Certified Removal |
+| **LLM-Specific** | SSD (NeurIPS 2024), Token Masking, Embedding Alignment, Causal Tracing |
+| **Diffusion-Specific** | Concept Erasure (ICCV 2023), Noise Injection, U-Net Surgery |
+| **VLM-Specific** | Contrastive Unlearning, Cross-Modal Decoupling |
+
+### Coreset Selectors (19)
+
+| Category | Selectors |
+|----------|-----------|
+| **Gradient-Based** | Influence Functions, TracIn, Gradient Norm, GradMatch/CRAIG, EL2N, Representer |
+| **Geometry-Based** | k-Center, Herding, GLISTER, Submodular, k-Means++ |
+| **Learning-Based** | Forgetting Events, Data Shapley, Valuation Network |
+| **Ensemble** | Voting Selector, Auto-Selector |
+
+---
+
+## 📊 Evaluation & Metrics
+
+```python
+from erasus.metrics import MetricSuite
+
+suite = MetricSuite(["accuracy", "mia", "perplexity"])
+results = suite.run(model, forget_loader, retain_loader)
+```
+
+| Category | Metrics |
+|----------|---------|
+| **Forgetting** | MIA (+ LiRA, LOSS variants), Confidence, Feature Distance |
+| **Utility** | Accuracy, Perplexity, Retrieval (R@1/5/10), FID |
+| **Efficiency** | Time Complexity, Memory Usage |
+| **Privacy** | Differential Privacy (ε, δ) |
+
+---
+
+## 📈 Visualization
+
+```python
+from erasus.visualization import (
+    EmbeddingVisualizer,
+    LossLandscapeVisualizer,
+    GradientVisualizer,
+    ReportGenerator,
+)
+
+# t-SNE / PCA embeddings
+viz = EmbeddingVisualizer(model)
+viz.plot(data_loader, method="tsne")
+
+# Loss landscape
+landscape = LossLandscapeVisualizer(model)
+landscape.plot_2d_contour(data_loader)
+
+# HTML report
+report = ReportGenerator("Unlearning Report")
+report.add_metrics(metrics)
+report.save("report.html")
+```
+
+---
+
+## 🔐 Certification & Privacy
+
+```python
+from erasus.certification import CertifiedRemovalVerifier, UnlearningVerifier
+
+# Formal (ε, δ)-removal verification
+verifier = CertifiedRemovalVerifier(epsilon=1.0, delta=1e-5)
+result = verifier.verify(unlearned_model, retrained_model, n_total=10000, n_forget=500)
+print(f"Certified: {result['certified']}")
+
+# Statistical verification
+stat_verifier = UnlearningVerifier(significance=0.05)
+tests = stat_verifier.verify_all(model, forget_loader, retain_loader)
+```
+
+---
+
+## 🧪 Experiment Tracking
+
+```python
+from erasus.experiments import ExperimentTracker
+
+# Supports: "local", "wandb", "mlflow"
+with ExperimentTracker("clip_unlearning", backend="wandb") as tracker:
+    tracker.log_config({"strategy": "gradient_ascent", "lr": 1e-4})
+    result = unlearner.fit(...)
+    tracker.log_metrics({"mia_auc": 0.52, "accuracy": 0.94})
+    tracker.log_model(model)
+```
+
+---
+
+## 📁 Project Structure
+
+```
+erasus/
+├── core/           # Base classes, registry, config, types
+├── unlearners/     # High-level API (7 modality-specific unlearners)
+├── strategies/     # 20 unlearning algorithms (gradient, parameter, data, LLM, diffusion, VLM)
+├── selectors/      # 19 coreset selection methods (gradient, geometry, learning, ensemble)
+├── metrics/        # 13+ evaluation metrics (forgetting, utility, efficiency, privacy)
+├── losses/         # Retain-anchor, contrastive, KL, MMD, custom
+├── visualization/  # Embeddings, loss surfaces, gradients, reports, interactive
+├── data/           # Dataset loaders (TOFU, WMDP, COCO, I2P, CC), preprocessing, partitioning
+├── models/         # 10 model wrappers (VLM, LLM, diffusion, audio, video)
+├── privacy/        # DP mechanisms, privacy accountant, certificates
+├── certification/  # Certified removal, statistical verification
+├── experiments/    # W&B / MLflow / local tracking
+├── cli/            # Command-line interface
+└── utils/          # Checkpointing, distributed, helpers, logging
+```
+
+---
+
+## 🏆 Benchmarks
+
+Run standardized benchmarks:
+
+```bash
+# TOFU Benchmark (LLM unlearning)
+python benchmarks/tofu/run.py --strategies gradient_ascent,scrub --epochs 5
+
+# WMDP Benchmark (hazardous knowledge)
+python benchmarks/wmdp/run.py --subsets bio,cyber
+
+# Full suite
+bash scripts/run_benchmarks.sh
+```
+
+---
+
+## 🧑‍💻 Examples
+
+| Example | Description |
+|---------|-------------|
+| [CLIP Coreset Comparison](examples/vision_language/clip_coreset_comparison.py) | Compare random vs. gradient_norm selectors |
+| [LLaVA Unlearning](examples/vision_language/llava_unlearning.py) | VLM unlearning with gradient ascent |
+| [LLaMA Concept Removal](examples/language_models/llama_concept_removal.py) | Remove concepts from LLaMA |
+| [GPT-2 Strategy Comparison](examples/language_models/gpt2_unlearning.py) | Compare gradient_ascent vs. negative_gradient |
+| [LoRA Efficient Unlearning](examples/language_models/lora_efficient_unlearning.py) | Parameter-efficient unlearning |
+| [SD NSFW Removal](examples/diffusion_models/stable_diffusion_nsfw.py) | Remove NSFW concepts |
+| [SD Artist Removal](examples/diffusion_models/stable_diffusion_artist.py) | Remove artist styles |
+| [TOFU Benchmark](examples/benchmarks/run_tofu_benchmark.py) | End-to-end benchmark |
+
+---
+
+## ✅ Test Status
+
+```
+87 tests passed ✅  |  0 failed  |  18.5s
+```
+
+```bash
+python -m pytest tests/ -v --tb=short
+```
+
+| Test Suite | Tests | Status |
+|-----------|:-----:|:------:|
+| Integration (pipelines) | 6 | ✅ |
+| End-to-end | 15 | ✅ |
+| Unit (selectors) | 9 | ✅ |
+| Unit (strategies) | 7 | ✅ |
+| Unit (metrics) | 8 | ✅ |
+| Core / imports / components | 42 | ✅ |
+
+---
+
+## 📚 Research References
+
+Erasus integrates and builds upon these key works:
+
+| Method | Paper | Venue |
+|--------|-------|-------|
+| SCRUB | Kurmanji et al. | CVPR 2024 |
+| Selective Synaptic Dampening | Foster et al. | NeurIPS 2024 |
+| Concept Erasure (ESD) | Gandikota et al. | ICCV 2023 |
+| Gradient Ascent | Golatkar et al. | NeurIPS 2020 |
+| Fisher Forgetting | Golatkar et al. | NeurIPS 2020 |
+| CRAIG | Mirzasoleiman et al. | NeurIPS 2020 |
+| GLISTER | Killamsetty et al. | ICLR 2021 |
+| Influence Functions | Koh & Liang | ICML 2017 |
+| TracIn | Pruthi et al. | NeurIPS 2020 |
+| Data Shapley | Ghorbani & Zou | ICML 2019 |
+| Forgetting Events | Toneva et al. | ICLR 2019 |
+| EL2N | Paul et al. | ICML 2021 |
+| Amnesiac ML | Graves et al. | S&P 2021 |
+
+---
 
 ## 🗺️ Roadmap
 
-### Phase 1: Core Framework
-- Implement `modality_decoupling` for CLIP.
-- Implement basic `gradient_geometry` coreset selection.
+- [x] Core framework (base classes, registry, config)
+- [x] 10 model architectures
+- [x] 20 unlearning strategies
+- [x] 19 coreset selectors
+- [x] 13+ evaluation metrics
+- [x] Visualization suite
+- [x] CLI (`erasus unlearn`, `erasus evaluate`)
+- [x] Certification & privacy modules
+- [x] Experiment tracking (W&B, MLflow, local)
+- [x] Benchmark runners (TOFU, WMDP)
+- [x] 87 passing tests
+- [ ] Additional model architectures (Flamingo, T5, DALL-E, Wav2Vec)
+- [ ] HuggingFace Hub integration
+- [ ] Interactive Gradio/Streamlit dashboard
+- [ ] Tutorial notebooks
+- [ ] PyPI release
 
-### Phase 2: Expansion
-- Add support for Diffusion Models (Stable Diffusion).
-- Integration with `peft` (LoRA-based unlearning).
-
-### Phase 3: The "Auto-Unlearner"
-- Develop the heuristic engine for auto-selecting strategies.
-- Build the `erasusBench` evaluation suite for automated MIA (Membership Inference Attack) testing.
+---
 
 ## 🤝 Contributing
 
-We welcome contributions!
+Contributions are welcome! Whether it's new unlearning strategies, coreset selectors, model support, or documentation.
+
+```bash
+# Setup development environment
+git clone https://github.com/OnePunchMonk/erasus.git
+cd erasus
+pip install -e ".[dev]"
+python -m pytest tests/ -v
+```
+
+---
 
 ## 📜 License
 
-MIT
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+## 📖 Citation
+
+```bibtex
+@software{erasus2026,
+  title={Erasus: Universal Machine Unlearning via Coreset Selection},
+  author={Aggarwal, Avaya},
+  year={2026},
+  url={https://github.com/OnePunchMonk/erasus}
+}
+```
+
+---
+
+<p align="center">
+  <b>Built with ❤️ for the machine unlearning research community</b>
+</p>

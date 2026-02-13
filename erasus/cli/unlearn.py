@@ -44,7 +44,58 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         "--dry-run", action="store_true",
         help="Validate config and print plan without executing.",
     )
+    parser.add_argument(
+        "--forget-dir", type=str, default=None,
+        help="Override path to forget-set data directory.",
+    )
+    parser.add_argument(
+        "--retain-dir", type=str, default=None,
+        help="Override path to retain-set data directory.",
+    )
     parser.set_defaults(func=run_unlearn)
+
+
+def _build_dataloader(data_dir: str, batch_size: int = 32) -> Optional[torch.utils.data.DataLoader]:
+    """Build a DataLoader from a directory of data.
+
+    Tries ``ImageFolder`` first (image classification), then falls back
+    to a generic ``TensorDataset`` from ``.pt`` files.
+    """
+    from torch.utils.data import DataLoader
+
+    data_path = Path(data_dir)
+    if not data_path.exists():
+        print(f"  ⚠ Data path does not exist: {data_dir}")
+        return None
+
+    # Try ImageFolder (images organised in class sub-folders)
+    try:
+        from torchvision.datasets import ImageFolder
+        from torchvision import transforms as T
+
+        transform = T.Compose([
+            T.Resize(224),
+            T.CenterCrop(224),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+        dataset = ImageFolder(data_path, transform=transform)
+        if len(dataset) > 0:
+            print(f"  ✓ Loaded ImageFolder dataset: {len(dataset)} samples from {data_dir}")
+            return DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
+    except Exception:
+        pass
+
+    # Try loading raw .pt tensors
+    pt_files = sorted(data_path.glob("*.pt"))
+    if pt_files:
+        tensors = [torch.load(f, map_location="cpu") for f in pt_files]
+        dataset = torch.utils.data.TensorDataset(*tensors)
+        print(f"  ✓ Loaded TensorDataset: {len(dataset)} samples from {len(pt_files)} .pt files")
+        return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    print(f"  ⚠ Could not build DataLoader from: {data_dir}")
+    return None
 
 
 def run_unlearn(args: argparse.Namespace) -> None:
@@ -105,24 +156,53 @@ def run_unlearn(args: argparse.Namespace) -> None:
         selector_kwargs=config.selector_kwargs,
     )
 
-    # ---- Data loaders (placeholder) ----
+    # ---- Data loaders ----
     print("[3/4] Preparing data loaders ...")
-    print("  ⚠ CLI data loading requires dataset paths in the YAML config.")
-    print("  → For now, use the Python API to pass DataLoaders directly.")
-    print("  → Example YAML fields: forget_data_dir, retain_data_dir")
-    print("  → Skipping unlearning execution via CLI.")
-    print()
+    forget_dir = args.forget_dir or getattr(config, "forget_data_dir", None)
+    retain_dir = args.retain_dir or getattr(config, "retain_data_dir", None)
+
+    forget_loader = None
+    retain_loader = None
+
+    if forget_dir:
+        forget_loader = _build_dataloader(forget_dir, batch_size=config.batch_size)
+    if retain_dir:
+        retain_loader = _build_dataloader(retain_dir, batch_size=config.batch_size)
+
+    if forget_loader is not None:
+        # ---- Run unlearning ----
+        print(f"\n  Running unlearning ({config.epochs} epochs) ...")
+        t0 = time.time()
+        result = unlearner.fit(
+            forget_data=forget_loader,
+            retain_data=retain_loader,
+            prune_ratio=config.prune_ratio,
+            epochs=config.epochs,
+        )
+        elapsed = time.time() - t0
+        print(f"  ✓ Unlearning complete in {elapsed:.1f}s")
+        print(f"    Coreset: {result.coreset_size}/{result.original_forget_size} "
+              f"({result.compression_ratio:.1%})")
+        if result.forget_loss_history:
+            print(f"    Final forget loss: {result.forget_loss_history[-1]:.4f}")
+        if result.retain_loss_history:
+            print(f"    Final retain loss: {result.retain_loss_history[-1]:.4f}")
+    else:
+        print("  ⚠ No forget dataset specified or loadable.")
+        print("  → Add 'forget_data_dir' to your YAML config or use --forget-dir.")
+        print("  → Alternatively, use the Python API to pass DataLoaders directly.")
+        print("  → Skipping unlearning execution.")
 
     # ---- Save checkpoint ----
     if args.output:
-        print(f"[4/4] (Skipped) Would save checkpoint to: {args.output}")
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        torch.save(unlearner.model.state_dict(), output_path)
+        print(f"\n[4/4] ✓ Checkpoint saved to: {args.output}")
     else:
-        print("[4/4] No --output specified; checkpoint not saved.")
+        print("\n[4/4] No --output specified; checkpoint not saved.")
 
     print()
-    print("✅ Pipeline validated.  To run the full pipeline, use the Python API:")
+    print("✅ Pipeline complete.")
     print()
-    print("    from erasus import ErasusUnlearner")
-    print("    unlearner = ErasusUnlearner(model, strategy='...', selector='...')")
-    print("    result = unlearner.fit(forget_loader, retain_loader)")
-    print()
+

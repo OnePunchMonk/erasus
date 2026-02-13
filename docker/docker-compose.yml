@@ -1,0 +1,39 @@
+services:
+  # Run tests
+  test:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: app
+    command: python -m pytest tests/ -v --tb=short
+    volumes:
+      - ..:/app
+
+  # Development environment
+  dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: dev
+    stdin_open: true
+    tty: true
+    volumes:
+      - ..:/app
+    command: bash
+
+  # Run benchmarks (GPU)
+  benchmark:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: benchmark
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - ..:/app
+    command: python benchmarks/tofu/run.py
