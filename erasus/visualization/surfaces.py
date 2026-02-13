@@ -5,7 +5,7 @@ Visualizes the loss landscape around the current model parameters
 to understand the geometry of the unlearned solution (minima sharpness, flatness).
 """
 
-from typing import Any, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 import copy
 import numpy as np
 import torch
@@ -109,9 +109,8 @@ class LossLandscapeVisualizer:
 
         for i in range(steps):
             for j in range(steps):
-                dx = filter_norm_scale(dir_x, xs[i]) # Actually we prescaled direction, wait.
-                # Just add: theta + x * dir1 + y * dir2
-                
+                # theta + x * dir1 + y * dir2  (directions are pre-normalized)
+
                 with torch.no_grad():
                     for idx, p in enumerate(self.model.parameters()):
                         p.data.copy_(orig_params[idx] + xs[i] * dir_x[idx] + ys[j] * dir_y[idx])
@@ -186,5 +185,18 @@ class LossLandscapeVisualizer:
         return total_loss / max(batches, 1)
 
 def filter_norm_scale(direction, scale):
-    # This was a placeholder in logic above.
-    pass 
+    """Scale a list of direction tensors by a scalar factor.
+
+    Parameters
+    ----------
+    direction : list[torch.Tensor]
+        Per-parameter direction vectors (already filter-normalized).
+    scale : float
+        Scalar multiplier.
+
+    Returns
+    -------
+    list[torch.Tensor]
+        Scaled direction tensors (new tensors, originals untouched).
+    """
+    return [d * scale for d in direction]

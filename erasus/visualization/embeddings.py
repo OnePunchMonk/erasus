@@ -155,8 +155,23 @@ class EmbeddingVisualizer:
         )
         
         if labels is not None:
-             # Try to create a legendary legend
-            pass # TODO: handle discrete vs continuous labels
+            unique_labels = np.unique(labels)
+            if len(unique_labels) <= 20:
+                # Discrete labels: create a categorical legend
+                for lbl in unique_labels:
+                    mask = labels == lbl
+                    plt.scatter(
+                        reduced[mask, 0],
+                        reduced[mask, 1],
+                        label=str(lbl),
+                        alpha=0.6,
+                        edgecolors='k',
+                        linewidth=0.5,
+                    )
+                plt.legend(title="Label", bbox_to_anchor=(1.05, 1), loc='upper left')
+            else:
+                # Continuous labels: add a colorbar
+                plt.colorbar(scatter, label="Value")
             
         plt.title(f"{title} ({method.upper()})")
         plt.grid(True, alpha=0.3)
