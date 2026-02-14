@@ -8,9 +8,9 @@
     <a href="#-quick-start"><img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python 3.9+"></a>
     <a href="#-installation"><img src="https://img.shields.io/badge/pytorch-2.0+-ee4c2c.svg" alt="PyTorch 2.0+"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License: MIT"></a>
-    <a href="#-test-status"><img src="https://img.shields.io/badge/tests-87%20passed-brightgreen.svg" alt="Tests"></a>
-    <a href="#-supported-models"><img src="https://img.shields.io/badge/models-10%20architectures-purple.svg" alt="Models"></a>
-    <a href="#-strategies--selectors"><img src="https://img.shields.io/badge/strategies-27%20methods-orange.svg" alt="Strategies"></a>
+    <a href="#-test-status"><img src="https://img.shields.io/badge/tests-340%20passed-brightgreen.svg" alt="Tests"></a>
+    <a href="#-supported-models"><img src="https://img.shields.io/badge/models-18%20architectures-purple.svg" alt="Models"></a>
+    <a href="#-strategies--selectors"><img src="https://img.shields.io/badge/strategies-30%20methods-orange.svg" alt="Strategies"></a>
   </p>
 </p>
 
@@ -45,14 +45,15 @@ Erasus operates in a three-stage pipeline:
 
 | Feature | Description |
 |---------|-------------|
-| 🎯 **Coreset-Driven Forgetting** | 19 coreset selectors (influence functions, CRAIG, herding, k-center, EL2N, TracIn, Data Shapley) reduce compute by up to 90% |
+| 🎯 **Coreset-Driven Forgetting** | 24 coreset selectors (influence functions, CRAIG, herding, k-center, EL2N, TracIn, Data Shapley, Active Learning) reduce compute by up to 90% |
 | 🧩 **Ensemble Unlearning** | Combine strategies sequentially or via weight averaging for robust forgetting |
 | 📷📝 **Multimodal Decoupling** | Unlearn image-text associations without breaking visual or textual generalization |
+| 🌐 **Federated Unlearning** | Decentralized unlearning across clients with FedAvg aggregation and client-side forgetting |
 | 🛡️ **Utility Preservation** | Retain-Anchor loss + Fisher regularization constrain model drift on safe data |
 | 🔐 **Certified Removal** | Formal (ε, δ)-removal verification with PAC-style guarantees |
-| 📊 **Integrated Evaluation** | MIA, confidence, feature distance, perplexity, FID, activation analysis, backdoor detection, 15+ metrics |
+| 📊 **Integrated Evaluation** | MIA, confidence, feature distance, perplexity, FID, activation analysis, backdoor detection, 25+ metrics |
 | 📈 **Visualization Suite** | Loss landscapes, embedding plots, gradient flow, interactive Plotly dashboards, HTML reports |
-| 🔌 **Model Agnostic** | Works with any PyTorch model + HuggingFace Transformers |
+| 🔌 **Model Agnostic** | Works with any PyTorch model + HuggingFace Transformers (BERT, LLaMA, T5, CLIP, DALL-E) |
 | 🖥️ **CLI + Python API** | `erasus unlearn`, `erasus benchmark`, `erasus visualize`, or full Python API |
 | 🧪 **Experiment Tracking** | Built-in W&B, MLflow, local JSON tracking + HPO with Optuna |
 | 📐 **Theoretical Bounds** | PAC-learning utility bounds, influence bounds, certified unlearning radius |
@@ -63,11 +64,12 @@ Erasus operates in a three-stage pipeline:
 
 | Modality | Models | Unlearner |
 |----------|--------|-----------|
-| **Vision-Language** | CLIP, LLaVA, BLIP-2 | `VLMUnlearner` |
-| **Language** | LLaMA, Mistral, GPT-2/J, BERT | `LLMUnlearner` |
-| **Diffusion** | Stable Diffusion 1.x/2.x/XL | `DiffusionUnlearner` |
-| **Audio** | Whisper | `AudioUnlearner` |
-| **Video** | VideoMAE | `VideoUnlearner` |
+| **Vision-Language** | CLIP, LLaVA, BLIP-2, Flamingo, VisionTransformer | `VLMUnlearner` |
+| **Language** | LLaMA, Mistral, GPT-2/J, BERT, T5 | `LLMUnlearner` |
+| **Diffusion** | Stable Diffusion 1.x/2.x/XL, DALL-E, Imagen | `DiffusionUnlearner` |
+| **Audio** | Whisper, CLAP, Wav2Vec | `AudioUnlearner` |
+| **Video** | VideoMAE, VideoCLIP | `VideoUnlearner` |
+| **Federated** | Any Architecture | `FederatedUnlearner` |
 | **Any** | Auto-detect | `MultimodalUnlearner` |
 
 ---
@@ -193,7 +195,7 @@ erasus visualize --type report --output report.html
 
 ## 🔧 Strategies & Selectors
 
-### Unlearning Strategies (27)
+### Unlearning Strategies (30)
 
 | Category | Strategies |
 |----------|------------|
@@ -202,17 +204,17 @@ erasus visualize --type report --output report.html
 | **Data Methods** | Amnesiac ML, SISA, Certified Removal, **Knowledge Distillation** |
 | **LLM-Specific** | SSD (NeurIPS 2024), Token Masking, Embedding Alignment, Causal Tracing, **Attention Surgery** |
 | **Diffusion-Specific** | Concept Erasure (ICCV 2023), Noise Injection, U-Net Surgery, **Timestep Masking**, **Safe Latents** |
-| **VLM-Specific** | Contrastive Unlearning, Cross-Modal Decoupling, **Attention Unlearning** |
+| **VLM-Specific** | Contrastive Unlearning, Cross-Modal Decoupling, **Attention Unlearning**, Vision-Text Split |
 | **Ensemble** | Sequential / Averaged multi-strategy combination |
 
-### Coreset Selectors (19)
+### Coreset Selectors (24)
 
 | Category | Selectors |
 |----------|-----------|
-| **Gradient-Based** | Influence Functions, TracIn, Gradient Norm, GradMatch/CRAIG, EL2N, Representer |
-| **Geometry-Based** | k-Center, Herding, GLISTER, Submodular, k-Means++ |
-| **Learning-Based** | Forgetting Events, Data Shapley, Valuation Network |
-| **Ensemble** | Voting Selector, Auto-Selector |
+| **Gradient-Based** | Influence Functions, TracIn, Gradient Norm, GradMatch/CRAIG, EL2N, Representer, Forgetting Score |
+| **Geometry-Based** | k-Center, Herding, GLISTER, Submodular, k-Means++, Farthest First |
+| **Learning-Based** | Forgetting Events, Data Shapley, Valuation Network, Active Learning, Loss Accumulation |
+| **Ensemble** | Voting Selector, Auto-Selector, Weighted Fusion |
 
 ---
 
@@ -227,10 +229,10 @@ results = suite.run(model, forget_loader, retain_loader)
 
 | Category | Metrics |
 |----------|---------|
-| **Forgetting** | MIA (+ LiRA, LOSS variants), Confidence, Feature Distance, **Activation Analysis**, **Backdoor ASR** |
-| **Utility** | Accuracy, Perplexity, Retrieval (R@1/5/10), FID |
+| **Forgetting** | MIA (+ LiRA, LOSS variants), Confidence, Feature Distance, **Activation Analysis**, **Backdoor ASR**, Extraction Attack |
+| **Utility** | Accuracy, Perplexity, Retrieval (R@1/5/10), FID, BLEU, ROUGE, CLIP Score, Inception Score |
 | **Efficiency** | Time Complexity, Memory Usage, **Speedup Ratio**, **FLOPs Estimation** |
-| **Privacy** | Differential Privacy (ε, δ) |
+| **Privacy** | Differential Privacy (ε, δ), Privacy Audit |
 
 ---
 
@@ -406,21 +408,21 @@ bash scripts/run_benchmarks.sh
 ## ✅ Test Status
 
 ```
-87 tests passed ✅  |  0 failed  |  26s
+340 tests passed ✅  |  0 failed  |  54s
 ```
 
 ```bash
 python -m pytest tests/ -v --tb=short
 ```
 
-| Test Suite | Tests | Status |
-|-----------|:-----:|:------:|
-| Integration (pipelines) | 6 | ✅ |
-| End-to-end | 15 | ✅ |
-| Unit (selectors) | 9 | ✅ |
-| Unit (strategies) | 7 | ✅ |
-| Unit (metrics) | 8 | ✅ |
-| Core / imports / components | 42 | ✅ |
+| Test Suite | Status |
+|-----------|:------:|
+| Integration (pipelines) | ✅ |
+| End-to-end | ✅ |
+| Unit (selectors) | ✅ |
+| Unit (strategies) | ✅ |
+| Unit (metrics) | ✅ |
+| Core / imports / components | ✅ |
 
 ---
 
@@ -460,8 +462,8 @@ Erasus integrates and builds upon these key works:
 - [x] Experiment tracking (W&B, MLflow, local) + HPO + ablation studies
 - [x] Benchmark runners (TOFU, WMDP)
 - [x] Callbacks & early stopping
-- [x] 87 passing tests
-- [ ] Additional model architectures (Flamingo, T5, DALL-E, Wav2Vec)
+- [x] 340+ passing tests
+- [x] Additional model architectures (Flamingo, T5, DALL-E, Wav2Vec)
 - [ ] HuggingFace Hub integration
 - [ ] Interactive Gradio/Streamlit dashboard
 - [ ] Tutorial notebooks
