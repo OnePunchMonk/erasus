@@ -136,7 +136,7 @@ class InfluenceSelector(BaseSelector):
 
     @staticmethod
     def _batch_gradient(model: nn.Module, batch, device) -> torch.Tensor:
-        """Compute flattened gradient for one batch."""
+        """Compute flattened gradient for one batch. Same layout as HVP (all params, zeros if unused)."""
         model.zero_grad()
         inputs = batch[0].to(device) if isinstance(batch, (list, tuple)) else batch.to(device)
         labels = batch[1].to(device) if isinstance(batch, (list, tuple)) and len(batch) > 1 else None
@@ -153,8 +153,12 @@ class InfluenceSelector(BaseSelector):
 
         grads = []
         for p in model.parameters():
+            if not p.requires_grad:
+                continue
             if p.grad is not None:
                 grads.append(p.grad.detach().flatten())
+            else:
+                grads.append(torch.zeros(p.numel(), device=p.device, dtype=p.dtype))
         return torch.cat(grads)
 
     @staticmethod
@@ -171,9 +175,15 @@ class InfluenceSelector(BaseSelector):
         loss = torch.nn.functional.cross_entropy(logits, labels) if labels is not None else logits.sum()
 
         params = [p for p in model.parameters() if p.requires_grad]
-        grads = torch.autograd.grad(loss, params, create_graph=True)
-        flat_grads = torch.cat([g.flatten() for g in grads])
+        grads = torch.autograd.grad(loss, params, create_graph=True, allow_unused=True)
+        flat_grads = torch.cat([
+            g.flatten() if g is not None else torch.zeros(p.numel(), device=p.device, dtype=p.dtype)
+            for g, p in zip(grads, params)
+        ])
 
         grad_v = torch.dot(flat_grads, v)
-        hvp_grads = torch.autograd.grad(grad_v, params)
-        return torch.cat([g.detach().flatten() for g in hvp_grads])
+        hvp_grads = torch.autograd.grad(grad_v, params, allow_unused=True)
+        return torch.cat([
+            g.detach().flatten() if g is not None else torch.zeros(p.numel(), device=p.device, dtype=p.dtype)
+            for g, p in zip(hvp_grads, params)
+        ])
