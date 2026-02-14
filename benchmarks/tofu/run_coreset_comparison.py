@@ -71,33 +71,29 @@ def run_coreset_benchmark(
     # Filter out skip list
     selectors_to_run = [s for s in all_selectors if s not in SKIP_SELECTORS]
 
-    # Add baseline: no selector (full forget set)
     results: Dict[str, Dict[str, Any]] = {}
 
-    for idx, sel_name in enumerate(["full"] + selectors_to_run, 1):
-        is_baseline = sel_name == "full"
-        label = f"full (no coreset)" if is_baseline else sel_name
-        print(f"  [{idx}/{len(selectors_to_run) + 1}] {label}... ", end="", flush=True)
+    for idx, sel_name in enumerate(selectors_to_run, 1):
+        print(f"  [{idx}/{len(selectors_to_run)}] {sel_name}... ", end="", flush=True)
 
         model = copy.deepcopy(base_model)
-        selector_arg = None if is_baseline else sel_name
-        selector_kwargs = SELECTOR_KWARGS.get(sel_name, {})
+        selector_kwargs = SELECTOR_KWARGS.get(sel_name)
 
         try:
             unlearner = ErasusUnlearner(
                 model=model,
                 strategy="knowledge_distillation",
-                selector=selector_arg,
+                selector=sel_name,
                 device="cpu",
                 strategy_kwargs={"lr": lr},
-                selector_kwargs=selector_kwargs if selector_kwargs else None,
+                selector_kwargs=selector_kwargs or None,
             )
 
             t0 = time.perf_counter()
             result = unlearner.fit(
                 forget_data=forget_loader,
                 retain_data=retain_loader,
-                prune_ratio=prune_ratio if not is_baseline else 1.0,
+                prune_ratio=prune_ratio,
                 epochs=epochs,
             )
             elapsed = time.perf_counter() - t0
@@ -105,9 +101,8 @@ def run_coreset_benchmark(
             forget_acc = compute_accuracy(unlearner.model, forget_loader)
             retain_acc = compute_accuracy(unlearner.model, retain_loader)
 
-            key = "full (no coreset)" if is_baseline else sel_name
-            results[key] = {
-                "selector": key,
+            results[sel_name] = {
+                "selector": sel_name,
                 "status": "OK",
                 "time_s": round(elapsed, 3),
                 "forget_accuracy": round(forget_acc, 4),
@@ -119,8 +114,8 @@ def run_coreset_benchmark(
             print(f"[OK] {elapsed:.2f}s  F.Acc: {forget_acc:.4f}  R.Acc: {retain_acc:.4f}")
 
         except Exception as e:
-            results[label] = {
-                "selector": label,
+            results[sel_name] = {
+                "selector": sel_name,
                 "status": "ERROR",
                 "error": str(e)[:80],
                 "time_s": 0,
@@ -201,22 +196,15 @@ def generate_report(
                 err_msg = r.get("error", "Unknown")[:80]
                 lines.append(f"| **{r['selector']}** | {err_msg} |")
 
-    lines.extend([
-        "",
-        "## Summary",
-        "",
-        f"- **Best unlearning**: ",
-        f"- **Best utility preservation**: ",
-        f"- **Fastest**: ",
-    ])
+    lines.extend(["", "## Summary", ""])
 
     if ok_count > 0:
         best = next(r for r in ranked if r["status"] == "OK")
         best_retain = max((r for r in ranked if r["status"] == "OK"), key=lambda x: x["retain_accuracy"] or 0)
         fastest = min((r for r in ranked if r["status"] == "OK"), key=lambda x: x["time_s"])
-        lines[-4] = f"- **Best unlearning**: `{best['selector']}` (Forget Acc: {best['forget_accuracy']:.4f})"
-        lines[-3] = f"- **Best utility preservation**: `{best_retain['selector']}` (Retain Acc: {best_retain['retain_accuracy']:.4f})"
-        lines[-2] = f"- **Fastest**: `{fastest['selector']}` ({fastest['time_s']:.3f}s)"
+        lines.append(f"- **Best unlearning**: `{best['selector']}` (Forget Acc: {best['forget_accuracy']:.4f})")
+        lines.append(f"- **Best utility preservation**: `{best_retain['selector']}` (Retain Acc: {best_retain['retain_accuracy']:.4f})")
+        lines.append(f"- **Fastest**: `{fastest['selector']}` ({fastest['time_s']:.3f}s)")
 
     lines.append("")
     output_path.write_text("\n".join(lines), encoding="utf-8")
@@ -232,12 +220,13 @@ def main() -> None:
 
     ranked = rank_results(results)
 
-    out_dir = ensure_dir(Path("benchmarks/tofu/results"))
+    script_dir = Path(__file__).resolve().parent
+    out_dir = ensure_dir(script_dir / "results")
     json_path = out_dir / "coreset_comparison.json"
     save_json(results, json_path)
     print(f"\n  Raw results saved to: {json_path}")
 
-    report_path = Path("benchmarks/tofu/CORESET_COMPARISON.md")
+    report_path = script_dir / "CORESET_COMPARISON.md"
     generate_report(ranked, base_forget_acc, base_retain_acc, report_path)
 
     print("\n" + "=" * 70)
