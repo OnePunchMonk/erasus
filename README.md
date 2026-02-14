@@ -93,9 +93,17 @@ pip install -e ".[full]"
 # Hugging Face Hub (push/pull unlearned models)
 pip install -e ".[hub]"
 
+# Interactive dashboards (Streamlit / Gradio)
+pip install -e ".[dashboard]"
+
 # Development
 pip install -e ".[dev]"
 ```
+
+### Notebooks & dashboards
+- **Notebooks:** `notebooks/01_introduction.ipynb`, `notebooks/02_coreset_analysis.ipynb`, `examples/notebooks/interactive_demo.ipynb`
+- **Streamlit:** `streamlit run apps/dashboard_streamlit.py`
+- **Gradio:** `python apps/dashboard_gradio.py` (requires `pip install gradio`)
 
 ### Quick Setup Script
 ```bash
@@ -470,6 +478,10 @@ Erasus integrates and builds upon these key works:
 - [x] PyPI release
 
 ---
+
+## 💡 Project ideas
+
+See **[project_ideas.md](project_ideas.md)** for extension ideas: more SOTA algorithms, benchmarks, integrations, and research directions. Paper reproductions live in `papers/reproductions/` (e.g. SCRUB, SSD, Concept Erasure, Fisher Forgetting, SISA, Amnesiac).
 
 ## 🤝 Contributing
 
