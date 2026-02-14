@@ -40,7 +40,7 @@ See the developer guide in `docs/developer_guide/` for patterns.
 
 ## Publishing to PyPI
 
-Releases are published to PyPI as the **erasus** package via GitHub Actions.
+Releases are published to PyPI as the **erasus** package via GitHub Actions. The **version is taken from the Git tag** (e.g. tag `v0.1.2` → PyPI version `0.1.2`), so you don’t bump version in the repo for releases and you never publish the same version twice.
 
 ### Prerequisites
 
@@ -49,21 +49,27 @@ Releases are published to PyPI as the **erasus** package via GitHub Actions.
 
 ### Release steps
 
-1. Bump version in `erasus/version.py` and `pyproject.toml` (if not auto-synced).
-2. Commit and push to `main`.
-3. On GitHub: **Releases** → **Create a new release**:
-   - Choose a tag (e.g. `v0.1.0`); create the tag if needed.
-   - Title e.g. `v0.1.0`.
+1. Commit and push to `main` (no need to edit `version.py` or `pyproject.toml` for the release).
+2. On GitHub: **Releases** → **Create a new release**:
+   - Create a **new tag** (e.g. `v0.1.2`). The tag name must be a valid version: `v0.1.2` or `0.1.2`.
+   - Title e.g. `v0.1.2`.
    - Publish the release.
-4. The workflow `.github/workflows/publish.yml` runs on `release: published` and uploads to PyPI.
-5. Users can install with: `pip install erasus` or `pip install erasus[full]`, `pip install erasus[hub]`.
+3. The workflow `.github/workflows/publish.yml` runs on `release: published`, sets the package version from the tag, builds once, and uploads to PyPI.
+4. Users can install with: `pip install erasus==0.1.2` or `pip install erasus`, `pip install erasus[full]`, `pip install erasus[hub]`.
+
+### Why a version didn’t change / 400 on upload
+
+- **Version is defined by the tag.** The workflow overwrites `pyproject.toml` and `erasus/version.py` with the tag-derived version at build time. If you expected 0.1.2 but the release tag is still `v0.1.1`, the published package will be 0.1.1.
+- **PyPI rejects re-uploading the same version.** If you see `400 Bad Request`, that version already exists on PyPI. Create a **new** tag (e.g. `v0.1.3`) and publish a new release; do not re-publish the same tag.
+- **Stale `dist/`:** The workflow runs `rm -rf dist/` before building so only the current tag’s artifacts are uploaded.
 
 ### Local build (no upload)
 
 ```bash
 pip install build
 python -m build
-# Artifacts in dist/: erasus-0.1.0.tar.gz, erasus-0.1.0-*.whl
+# Artifacts in dist/: erasus-<version>.tar.gz, erasus-<version>-*.whl
+# Version comes from pyproject.toml (for local dev).
 ```
 
 ## Pull Request Checklist

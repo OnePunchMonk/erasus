@@ -1,3 +1,7 @@
+# Publish erasus to PyPI when a GitHub Release is published.
+# Version is taken from the release tag (e.g. v0.1.2 → 0.1.2) so you never
+# publish the same version twice: each release uses its tag as the single source of truth.
+
 name: Publish to PyPI
 
 on:
@@ -16,6 +20,36 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" != refs/tags/* ]]; then
+            echo "error=Release workflow must run on a tag (refs/tags/v*)" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.([0-9]+|[0-9a-zA-Z.-]+)$ ]]; then
+            echo "error=Tag must be a valid PEP 440 version (e.g. v0.1.2 or 0.1.2)" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Using version: $VERSION"
+
+      - name: Set version in package
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Update pyproject.toml
+          sed -i 's/^version = .*/version = "'"$VERSION"'"/' pyproject.toml
+          # Update erasus/version.py
+          echo '"""Erasus version information (set from Git tag at release)."""' > erasus/version.py
+          echo "" >> erasus/version.py
+          echo '__version__ = "'"$VERSION"'"' >> erasus/version.py
+          echo '__version_info__ = tuple(int(x) for x in __version__.split(".")[:3] if x.isdigit())' >> erasus/version.py
+          echo "Wrote version $VERSION to pyproject.toml and erasus/version.py"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -25,8 +59,11 @@ jobs:
       - name: Install build tools
         run: pip install build
 
-      - name: Build package
-        run: python -m build
+      - name: Clean and build package
+        run: |
+          rm -rf dist/
+          python -m build
+          ls -la dist/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
