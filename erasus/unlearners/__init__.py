@@ -11,6 +11,7 @@ from erasus.unlearners.diffusion_unlearner import DiffusionUnlearner
 from erasus.unlearners.audio_unlearner import AudioUnlearner
 from erasus.unlearners.video_unlearner import VideoUnlearner
 from erasus.unlearners.multimodal_unlearner import MultimodalUnlearner
+from erasus.unlearners.federated_unlearner import FederatedUnlearner
 
 __all__ = [
     "ErasusUnlearner",
@@ -20,4 +21,5 @@ __all__ = [
     "AudioUnlearner",
     "VideoUnlearner",
     "MultimodalUnlearner",
+    "FederatedUnlearner",
 ]

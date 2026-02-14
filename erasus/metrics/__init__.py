@@ -21,6 +21,23 @@ from erasus.metrics.efficiency.time_complexity import TimeComplexityMetric
 from erasus.metrics.efficiency.memory_usage import MemoryUsageMetric
 from erasus.metrics.privacy.differential_privacy import DPEvaluationMetric
 
+# Sprint A metrics
+from erasus.metrics.forgetting.activation_analysis import ActivationAnalysis
+from erasus.metrics.forgetting.backdoor_activation import BackdoorActivation
+from erasus.metrics.efficiency.speedup import SpeedupMetric
+from erasus.metrics.efficiency.flops import FLOPsMetric
+
+# Sprint F metrics
+from erasus.metrics.forgetting.extraction_attack import ExtractionAttackMetric
+from erasus.metrics.utility.clip_score import CLIPScoreMetric
+from erasus.metrics.utility.bleu import BLEUMetric
+from erasus.metrics.utility.rouge import ROUGEMetric
+from erasus.metrics.utility.inception_score import InceptionScoreMetric
+from erasus.metrics.utility.downstream_tasks import DownstreamTaskMetric
+from erasus.metrics.privacy.epsilon_delta import EpsilonDeltaMetric
+from erasus.metrics.privacy.privacy_audit import PrivacyAuditMetric
+from erasus.metrics.benchmarks import ErasusBenchmark
+
 # Register all metrics for CLI / registry-based resolution
 for name, cls in [
     ("accuracy", AccuracyMetric),
@@ -57,5 +74,19 @@ __all__ = [
     "TimeComplexityMetric",
     "MemoryUsageMetric",
     "DPEvaluationMetric",
+    # Sprint A
+    "ActivationAnalysis",
+    "BackdoorActivation",
+    "SpeedupMetric",
+    "FLOPsMetric",
+    # Sprint F
+    "ExtractionAttackMetric",
+    "CLIPScoreMetric",
+    "BLEUMetric",
+    "ROUGEMetric",
+    "InceptionScoreMetric",
+    "DownstreamTaskMetric",
+    "EpsilonDeltaMetric",
+    "PrivacyAuditMetric",
+    "ErasusBenchmark",
 ]
-
