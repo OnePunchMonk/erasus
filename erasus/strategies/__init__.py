@@ -36,6 +36,7 @@ from erasus.strategies.diffusion_specific.unet_surgery import UNetSurgeryStrateg
 # VLM-specific
 from erasus.strategies.vlm_specific.contrastive_unlearning import ContrastiveUnlearningStrategy
 from erasus.strategies.vlm_specific.attention_unlearning import AttentionUnlearningStrategy
+from erasus.strategies.vlm_specific.vision_text_split import VisionTextSplitStrategy
 
 # New gradient methods
 from erasus.strategies.gradient_methods.saliency_unlearning import SaliencyUnlearningStrategy
@@ -84,5 +85,6 @@ __all__ = [
     "SafeLatentsStrategy",
     "ContrastiveUnlearningStrategy",
     "AttentionUnlearningStrategy",
+    "VisionTextSplitStrategy",
     "EnsembleStrategy",
 ]

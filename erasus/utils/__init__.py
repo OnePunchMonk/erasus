@@ -27,6 +27,9 @@ from erasus.utils.distributed import (
     broadcast_object,
 )
 
+from erasus.utils.profiling import UnlearningProfiler, profile_section, profile_model_memory
+from erasus.utils.reproducibility import make_reproducible, ExperimentSnapshot
+
 __all__ = [
     # helpers
     "count_parameters",
@@ -51,4 +54,11 @@ __all__ = [
     "wrap_model_ddp",
     "all_reduce_mean",
     "broadcast_object",
+    # profiling
+    "UnlearningProfiler",
+    "profile_section",
+    "profile_model_memory",
+    # reproducibility
+    "make_reproducible",
+    "ExperimentSnapshot",
 ]

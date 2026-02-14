@@ -13,6 +13,13 @@ from erasus.visualization.loss_curves import plot_loss_curve
 from erasus.visualization.feature_plots import plot_embeddings
 from erasus.visualization.mia_plots import plot_mia_histogram, plot_mia_roc
 
+# Sprint A+F visualizations
+from erasus.visualization.attention import AttentionVisualizer
+from erasus.visualization.comparisons import ComparisonVisualizer
+from erasus.visualization.activation import ActivationVisualizer
+from erasus.visualization.influence_maps import InfluenceMapVisualizer
+from erasus.visualization.cross_modal import CrossModalVisualizer
+
 __all__ = [
     "EmbeddingVisualizer",
     "LossLandscapeVisualizer",
@@ -24,4 +31,9 @@ __all__ = [
     "plot_embeddings",
     "plot_mia_histogram",
     "plot_mia_roc",
+    "AttentionVisualizer",
+    "ComparisonVisualizer",
+    "ActivationVisualizer",
+    "InfluenceMapVisualizer",
+    "CrossModalVisualizer",
 ]

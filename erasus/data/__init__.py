@@ -6,6 +6,8 @@ from erasus.data.datasets import (
     COCOCaptionsDataset,
     I2PDataset,
     ConceptualCaptionsDataset,
+    MUSEDataset,
+    ImageNetDataset,
 )
 
 __all__ = [
@@ -14,4 +16,6 @@ __all__ = [
     "COCOCaptionsDataset",
     "I2PDataset",
     "ConceptualCaptionsDataset",
+    "MUSEDataset",
+    "ImageNetDataset",
 ]

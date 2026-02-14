@@ -4,8 +4,8 @@ description: Comprehensive agenda for the Erasus framework — gap analysis vs. 
 
 # Erasus Framework — Comprehensive Agenda
 
-**Last Updated:** 2026-02-14 (Sprint A complete)
-**Test Status:** 87 / 87 passing ✅
+**Last Updated:** 2026-02-14 (Sprint B complete)
+**Test Status:** 206 / 206 passing ✅
 
 ---
 
@@ -23,48 +23,55 @@ description: Comprehensive agenda for the Erasus framework — gap analysis vs. 
 - **Video:** `videomae.py`
 - **Infra:** `model_wrapper.py`, `registry.py`
 
-### Selectors (19 implementations) ✅
+### Selectors (22 implementations) ✅
 - **Gradient-based:** `influence.py`, `tracin.py`, `gradient_norm.py`, `grad_match.py`, `el2n.py`, `representer.py`, `forgetting_score.py`
 - **Geometry-based:** `kcenter.py`, `herding.py`, `craig.py`, `glister.py`, `submodular.py`, `kmeans_coreset.py`, `k_center.py`
-- **Learning-based:** `forgetting_events.py`, `data_shapley.py`, `valuation_network.py`, `loss_accum.py`
-- **Ensemble:** `voting.py`
+- **Learning-based:** `forgetting_events.py`, `data_shapley.py`, `valuation_network.py`, `loss_accum.py`, `active_learning.py` ← NEW
+- **Ensemble:** `voting.py`, `weighted_fusion.py` ← NEW
+- **Quality analysis:** `quality_metrics.py` ← NEW
 - **Utility:** `auto_selector.py`, `random_selector.py`, `full_selector.py`
 
-### Strategies (27 implementations) ✅
-- **Gradient methods:** `gradient_ascent.py`, `scrub.py`, `modality_decoupling.py`, `fisher_forgetting.py`, `negative_gradient.py`, `saliency_unlearning.py` ← NEW
-- **Parameter methods:** `lora_unlearning.py`, `sparse_aware.py`, `mask_based.py`, `neuron_pruning.py`, `layer_freezing.py` ← NEW
-- **Data methods:** `amnesiac.py`, `sisa.py`, `certified_removal.py`, `knowledge_distillation.py` ← NEW
-- **LLM-specific:** `ssd.py`, `token_masking.py`, `embedding_alignment.py`, `causal_tracing.py`, `attention_surgery.py` ← NEW
-- **Diffusion-specific:** `concept_erasure.py`, `noise_injection.py`, `unet_surgery.py`, `timestep_masking.py` ← NEW, `safe_latents.py` ← NEW
-- **VLM-specific:** `contrastive_unlearning.py`, `cross_modal_decoupling.py`, `attention_unlearning.py` ← NEW
-- **Ensemble:** `ensemble_strategy.py` ← NEW
+### Strategies (28 implementations) ✅
+- **Gradient methods:** `gradient_ascent.py`, `scrub.py`, `modality_decoupling.py`, `fisher_forgetting.py`, `negative_gradient.py`, `saliency_unlearning.py` ← Sprint A
+- **Parameter methods:** `lora_unlearning.py`, `sparse_aware.py`, `mask_based.py`, `neuron_pruning.py`, `layer_freezing.py` ← Sprint A
+- **Data methods:** `amnesiac.py`, `sisa.py`, `certified_removal.py`, `knowledge_distillation.py` ← Sprint A
+- **LLM-specific:** `ssd.py`, `token_masking.py`, `embedding_alignment.py`, `causal_tracing.py`, `attention_surgery.py` ← Sprint A
+- **Diffusion-specific:** `concept_erasure.py`, `noise_injection.py`, `unet_surgery.py`, `timestep_masking.py` ← Sprint A, `safe_latents.py` ← Sprint A
+- **VLM-specific:** `contrastive_unlearning.py`, `cross_modal_decoupling.py`, `attention_unlearning.py` ← Sprint A, `vision_text_split.py` ← NEW Sprint F
+- **Ensemble:** `ensemble_strategy.py` ← Sprint A
 
 ### Losses (8 implementations) ✅
 - **Original (5):** `retain_anchor.py`, `contrastive.py`, `kl_divergence.py`, `mmd.py`, `custom_losses.py`
 - **New (4):** `fisher_regularization.py` ← NEW, `adversarial_loss.py` ← NEW, `triplet_loss.py` ← NEW, `l2_regularization.py` ← NEW
 
-### Unlearner API (7 classes) ✅
+### Unlearner API (8 classes) ✅
 - `erasus_unlearner.py`, `vlm_unlearner.py`, `llm_unlearner.py`, `diffusion_unlearner.py`
 - `audio_unlearner.py`, `video_unlearner.py`, `multimodal_unlearner.py`
+- `federated_unlearner.py` ← NEW Sprint F
 
-### Metrics (15+ implementations) ✅
+### Metrics (26+ implementations) ✅
 - **Flat:** `accuracy.py`, `membership_inference.py`, `perplexity.py`, `retrieval.py`, `fid.py`, `retrieval_metrics.py`
 - **Suite:** `metric_suite.py`
-- **Forgetting:** `mia.py`, `mia_variants.py`, `confidence.py`, `feature_distance.py`, `activation_analysis.py` ← NEW, `backdoor_activation.py` ← NEW
-- **Efficiency:** `time_complexity.py`, `memory_usage.py`, `speedup.py` ← NEW, `flops.py` ← NEW
-- **Privacy:** `differential_privacy.py`
+- **Forgetting:** `mia.py`, `mia_variants.py`, `confidence.py`, `feature_distance.py`, `activation_analysis.py` ← Sprint A, `backdoor_activation.py` ← Sprint A, `extraction_attack.py` ← NEW Sprint F
+- **Efficiency:** `time_complexity.py`, `memory_usage.py`, `speedup.py` ← Sprint A, `flops.py` ← Sprint A
+- **Utility:** `clip_score.py` ← NEW, `bleu.py` ← NEW, `rouge.py` ← NEW, `inception_score.py` ← NEW, `downstream_tasks.py` ← NEW (all Sprint F)
+- **Privacy:** `differential_privacy.py`, `epsilon_delta.py` ← NEW Sprint F, `privacy_audit.py` ← NEW Sprint F
+- **Benchmark:** `benchmarks.py` ← NEW Sprint F (unified runner with LaTeX, radar plots, statistical tests)
 
-### Visualization (10 files) ✅
+### Visualization (13 files) ✅
 - **Original (8):** `embeddings.py`, `surfaces.py`, `gradients.py`, `reports.py`, `interactive.py`, `loss_curves.py`, `feature_plots.py`, `mia_plots.py`
-- **New (2):** `attention.py` ← NEW, `comparisons.py` ← NEW
+- **Sprint A (2):** `attention.py`, `comparisons.py`
+- **Sprint F (3):** `activation.py` ← NEW, `influence_maps.py` ← NEW, `cross_modal.py` ← NEW
 
 ### Data Module ✅
-- **Datasets:** `tofu.py`, `wmdp.py`, `coco.py`, `i2p.py`, `conceptual_captions.py`
+- **Datasets:** `tofu.py`, `wmdp.py`, `coco.py`, `i2p.py`, `conceptual_captions.py`, `muse.py` ← NEW Sprint B, `imagenet.py` ← NEW Sprint B
 - **Utils:** `preprocessing.py`, `partitioning.py`, `samplers.py`, `loaders.py`, `transforms.py`, `splits.py`, `datasets.py`, `multimodal.py`
-- **Synthetic:** `backdoor_generator.py`
+- **Augmentation:** `augmentation.py` ← NEW Sprint B
+- **Synthetic:** `backdoor_generator.py`, `bias_generator.py` ← NEW Sprint B, `privacy_generator.py` ← NEW Sprint B
 
 ### Privacy Module ✅
 - `accountant.py`, `dp_mechanisms.py`, `certificates.py`, `influence_bounds.py`
+- `gradient_clipping.py` ← NEW Sprint B, `secure_aggregation.py` ← NEW Sprint B
 
 ### Certification Module ✅
 - `certified_removal.py`, `verification.py`, `bounds.py` ← NEW (PAC bounds, influence bounds, certified radius)
@@ -72,9 +79,10 @@ description: Comprehensive agenda for the Erasus framework — gap analysis vs. 
 ### CLI (4 commands) ✅
 - `main.py`, `unlearn.py`, `evaluate.py`, `benchmark.py` ← NEW, `visualize.py` ← NEW
 
-### Utils (7 modules) ✅
+### Utils (9 modules) ✅
 - **Original (5):** `checkpointing.py`, `distributed.py`, `helpers.py`, `logging.py`, `seed.py`
-- **New (2):** `callbacks.py` ← NEW, `early_stopping.py` ← NEW
+- **Sprint A (2):** `callbacks.py`, `early_stopping.py`
+- **Sprint B (2):** `profiling.py` ← NEW, `reproducibility.py` ← NEW
 
 ### Experiments (3 modules) ✅
 - `experiment_tracker.py` (local/W&B/MLflow)
@@ -103,7 +111,7 @@ description: Comprehensive agenda for the Erasus framework — gap analysis vs. 
 - `docs/conf.py`, `docs/index.rst`, `docs/quickstart.rst`, `docs/installation.rst`
 - `docs/api/core.rst`, `docs/api/unlearners.rst`
 
-### Tests (87 passing) ✅
+### Tests (206 passing) ✅
 
 ---
 
@@ -137,15 +145,15 @@ description: Comprehensive agenda for the Erasus framework — gap analysis vs. 
 #### 1.1 Missing Model Architectures
 | Module | Description | Priority |
 |--------|-------------|----------|
-| `models/vlm/flamingo.py` | Flamingo VLM adapter | 🔴 High |
-| `models/vlm/vision_transformer.py` | ViT helper utilities | 🟡 Medium |
-| `models/llm/t5.py` | T5 encoder-decoder model wrapper | 🔴 High |
-| `models/diffusion/dalle.py` | DALL-E 2/3 model wrapper | 🟡 Medium |
-| `models/diffusion/imagen.py` | Imagen model wrapper | 🟡 Medium |
-| `models/diffusion/diffusion_utils.py` | Noise schedulers, diffusion helpers | 🔴 High |
-| `models/audio/wav2vec.py` | Wav2Vec 2.0 model wrapper | 🟡 Medium |
-| `models/audio/clap.py` | CLAP audio-text model | 🟢 Low |
-| `models/video/video_clip.py` | VideoCLIP model wrapper | 🟡 Medium |
+| ~~`models/vlm/flamingo.py`~~ | ~~Flamingo VLM adapter~~ | ✅ Done (Sprint B) |
+| ~~`models/vlm/vision_transformer.py`~~ | ~~ViT helper utilities~~ | ✅ Done (Sprint B) |
+| ~~`models/llm/t5.py`~~ | ~~T5 encoder-decoder model wrapper~~ | ✅ Done (Sprint B) |
+| ~~`models/diffusion/dalle.py`~~ | ~~DALL-E 2/3 model wrapper~~ | ✅ Done (Sprint B) |
+| ~~`models/diffusion/imagen.py`~~ | ~~Imagen model wrapper~~ | ✅ Done (Sprint B) |
+| ~~`models/diffusion/diffusion_utils.py`~~ | ~~Noise schedulers, diffusion helpers~~ | ✅ Done (Sprint B) |
+| ~~`models/audio/wav2vec.py`~~ | ~~Wav2Vec 2.0 model wrapper~~ | ✅ Done (Sprint B) |
+| ~~`models/audio/clap.py`~~ | ~~CLAP audio-text model~~ | ✅ Done (Sprint B) |
+| ~~`models/video/video_clip.py`~~ | ~~VideoCLIP model wrapper~~ | ✅ Done (Sprint B) |
 | DINOv2 | Self-supervised vision model | 🟢 Low |
 | Segment Anything (SAM) | Foundation segmentation model | 🟢 Low |
 | Gemma / Phi | Smaller LLMs for efficient unlearning | 🟡 Medium |
@@ -160,72 +168,39 @@ description: Comprehensive agenda for the Erasus framework — gap analysis vs. 
 | ~~`strategies/diffusion_specific/timestep_masking.py`~~ | ~~Selective timestep training~~ | ✅ Done |
 | ~~`strategies/diffusion_specific/safe_latents.py`~~ | ~~Safe Latent Diffusion (SLD)~~ | ✅ Done |
 | ~~`strategies/vlm_specific/attention_unlearning.py`~~ | ~~Cross-attention modification~~ | ✅ Done |
-| `strategies/vlm_specific/vision_text_split.py` | Separate encoder update strategy | 🟡 Medium |
+| ~~`strategies/vlm_specific/vision_text_split.py`~~ | ~~Separate encoder update strategy~~ | ✅ Done |
 | ~~`strategies/ensemble_strategy.py`~~ | ~~Combine multiple strategies~~ | ✅ Done |
 
 #### 1.3 Remaining Missing Selectors
-| Module | Description | Priority |
-|--------|-------------|----------|
-| `selectors/learning_based/active_learning.py` | Uncertainty-based active selection | 🟡 Medium |
-| `selectors/ensemble/weighted_fusion.py` | Weighted combination of selectors | 🟡 Medium |
-| `selectors/quality_metrics.py` | Coverage, diversity, influence concentration analysis | 🔴 High |
+All planned selectors are now implemented. ✅
 
 #### 1.4 Remaining Missing Losses
 All originally planned losses are now implemented. ✅
 
 #### 1.5 Remaining Missing Metrics
-| Module | Description | Priority |
-|--------|-------------|----------|
-| ~~`metrics/forgetting/activation_analysis.py`~~ | ~~Internal activation analysis~~ | ✅ Done |
-| ~~`metrics/forgetting/backdoor_activation.py`~~ | ~~Backdoor success rate metric~~ | ✅ Done |
-| `metrics/forgetting/extraction_attack.py` | Data extraction attack metric | 🟡 Medium |
-| `metrics/utility/bleu.py` | BLEU translation quality metric | 🟡 Medium |
-| `metrics/utility/rouge.py` | ROUGE summarization metric | 🟡 Medium |
-| `metrics/utility/clip_score.py` | CLIP similarity score | 🔴 High |
-| `metrics/utility/inception_score.py` | Inception Score for generation quality | 🟡 Medium |
-| `metrics/utility/downstream_tasks.py` | Task-specific downstream evaluation | 🟢 Low |
-| ~~`metrics/efficiency/flops.py`~~ | ~~FLOPs estimation~~ | ✅ Done |
-| ~~`metrics/efficiency/speedup.py`~~ | ~~Speedup ratio~~ | ✅ Done |
-| `metrics/privacy/epsilon_delta.py` | (ε, δ)-DP computation module | 🟡 Medium |
-| `metrics/privacy/privacy_audit.py` | Privacy auditing framework | 🟡 Medium |
-| `metrics/benchmarks.py` | Unified benchmark runner (publication-ready output) | 🔴 High |
-| Metrics `utility/` sub-package init | Reorganize into `utility/` sub-package | 🟡 Medium |
+All planned metrics are now implemented. ✅
 
 #### 1.6 Remaining Missing Visualization
-| Module | Description | Priority |
-|--------|-------------|----------|
-| ~~`visualization/attention.py`~~ | ~~Attention heatmap visualization~~ | ✅ Done |
-| `visualization/activation.py` | Layer activation visualization | 🔴 High |
-| `visualization/influence_maps.py` | Influence attribution visualization | 🟡 Medium |
-| ~~`visualization/comparisons.py`~~ | ~~Before/after comparison plots~~ | ✅ Done |
-| `visualization/cross_modal.py` | Cross-modal interference visualization | 🔴 High |
+All planned visualization modules are now implemented. ✅
 
 #### 1.7 Missing Data Components
 | Module | Description | Priority |
 |--------|-------------|----------|
-| `data/augmentation.py` | Data augmentation strategies for unlearning | 🟡 Medium |
-| `data/datasets/imagenet.py` | ImageNet variants loader | 🟡 Medium |
+| ~~`data/augmentation.py`~~ | ~~Data augmentation strategies for unlearning~~ | ✅ Done (Sprint B) |
+| ~~`data/datasets/imagenet.py`~~ | ~~ImageNet variants loader~~ | ✅ Done (Sprint B) |
 | `data/datasets/laion.py` | LAION subset loaders | 🟢 Low |
-| `data/datasets/muse.py` | MUSE benchmark dataset | 🔴 High |
-| `data/synthetic/bias_generator.py` | Synthetic bias injection for fairness | 🟡 Medium |
-| `data/synthetic/privacy_generator.py` | Privacy-sensitive synthetic data | 🟡 Medium |
+| ~~`data/datasets/muse.py`~~ | ~~MUSE benchmark dataset~~ | ✅ Done (Sprint B) |
+| ~~`data/synthetic/bias_generator.py`~~ | ~~Synthetic bias injection for fairness~~ | ✅ Done (Sprint B) |
+| ~~`data/synthetic/privacy_generator.py`~~ | ~~Privacy-sensitive synthetic data~~ | ✅ Done (Sprint B) |
 
 #### 1.8 Missing Privacy Components
-| Module | Description | Priority |
-|--------|-------------|----------|
-| `privacy/gradient_clipping.py` | Per-sample gradient clipping for DP-SGD | 🔴 High |
-| `privacy/secure_aggregation.py` | Secure aggregation for federated privacy | 🟡 Medium |
+All planned privacy modules are now implemented. ✅
 
 #### 1.9 Remaining Missing Certification
 All planned certification modules are now implemented. ✅
 
 #### 1.10 Remaining Missing Utils
-| Module | Description | Priority |
-|--------|-------------|----------|
-| `utils/profiling.py` | Performance profiling (GPU utilization, bottleneck analysis) | 🟡 Medium |
-| `utils/reproducibility.py` | Extended reproducibility utilities (beyond seed.py) | 🟢 Low |
-| ~~`utils/callbacks.py`~~ | ~~Training callbacks~~ | ✅ Done |
-| ~~`utils/early_stopping.py`~~ | ~~Early stopping logic~~ | ✅ Done |
+All planned utils modules are now implemented. ✅
 
 #### 1.11 Remaining Missing CLI Commands
 All planned CLI commands are now implemented. ✅
@@ -234,9 +209,7 @@ All planned CLI commands are now implemented. ✅
 All planned experiment tools are now implemented. ✅
 
 #### 1.13 Missing Unlearners
-| Module | Description | Priority |
-|--------|-------------|----------|
-| `unlearners/federated_unlearner.py` | Federated unlearning orchestrator | 🟡 Medium |
+All planned unlearners are now implemented. ✅
 
 ---
 
@@ -525,16 +498,16 @@ from erasus.unlearners import ErasusUnlearner, MultimodalUnlearner
 
 ---
 
-## 📊 GAP SUMMARY BY CATEGORY (Updated Post-Sprint A)
+## 📊 GAP SUMMARY BY CATEGORY (Updated Post-Sprint F)
 
-| Category | Implemented | In Spec | Gap | Δ from last |
+| Category | Implemented | In Spec | Gap | Δ from Sprint A |
 |----------|:-----------:|:-------:|:---:|:-----------:|
 | **Model Architectures** | 10 | 17+ | 7+ | — |
-| **Strategies** | **27** | 29 | **2** | ↓7 |
-| **Selectors** | 19 | 22 | 3 | — |
-| **Losses** | **8** | 9 | **1** | ↓3 |
-| **Metrics** | **17** | 26+ | **9** | ↓4 |
-| **Visualization** | **10** | 13 | **3** | ↓2 |
+| **Strategies** | **28** | 29 | **1** | ↓1 |
+| **Selectors** | **22** | 22 | **0** | ↓3 ✅ |
+| **Losses** | **8** | 9 | **1** | — |
+| **Metrics** | **26+** | 26+ | **0** | ↓9 ✅ |
+| **Visualization** | **13** | 13 | **0** | ↓3 ✅ |
 | **Data Loaders** | 5 | 7 | 2 | — |
 | **Synthetic Data** | 1 | 3 | 2 | — |
 | **Examples** | 9 | 27+ | 18+ | — |
@@ -542,25 +515,45 @@ from erasus.unlearners import ErasusUnlearner, MultimodalUnlearner
 | **Benchmark Suites** | 2 | 7+ | 5 | — |
 | **Paper Reproductions** | 1 | 4 | 3 | — |
 | **CI/CD Workflows** | 1 | 5 | 4 | — |
-| **CLI Commands** | **5** | 5 | **0** | ↓2 ✅ |
+| **CLI Commands** | **5** | 5 | **0** | — ✅ |
 | **Docs Pages** | 6 | 30+ | 24+ | — |
-| **Test Files** | 12 | 20+ | 8+ | — |
-| **Utils Modules** | **7** | 8 | **1** | ↓2 |
-| **Privacy Modules** | 4 | 6 | 2 | — |
-| **Certification** | **3** | 3 | **0** | ↓1 ✅ |
-| **Experiment Tools** | **3** | 3 | **0** | ↓2 ✅ |
+| **Test Files** | **14** | 20+ | 6+ | ↓2 |
+| **Utils Modules** | **9** | 9 | **0** | ↓2 ✅ |
+| **Privacy Modules** | **6** | 6 | **0** | ↓2 ✅ |
+| **Certification** | **3** | 3 | **0** | — ✅ |
+| **Experiment Tools** | **3** | 3 | **0** | — ✅ |
+| **Unlearners** | **8** | 8 | **0** | ↓1 ✅ |
+| **Models** | **18+** | 21 | **3** | ↓9 |
+| **Data Modules** | **18+** | 19+ | **1** | ↓5 |
 
-**Total files implemented:** ~160+
-**Remaining gap:** ~95 files/modules (down from ~120+)
-**Sprint A reduced gap by:** ~25 files
+**Total files implemented:** ~196+
+**Remaining gap:** ~62 files/modules (down from ~78)
+**Sprint B reduced gap by:** ~16 core files + 1 test file
 
 ---
 
 ## 🗓️ REMAINING IMPLEMENTATION SPRINTS
 
-### Sprint B: Missing Models & Data (Est. 2 days)
-- Models: `flamingo`, `t5`, `dalle`, `imagen`, `diffusion_utils`, `wav2vec`, `clap`, `video_clip`
-- Data: `muse.py`, `imagenet.py`, `bias_generator.py`, `privacy_generator.py`, `augmentation.py`
+### ✅ Sprint B: Missing Models & Data — COMPLETED
+
+**16 new files implemented:**
+
+| Category | New Modules | Count |
+|----------|------------|:-----:|
+| **Models - VLM** | `flamingo.py`, `vision_transformer.py` | 2 |
+| **Models - LLM** | `t5.py` | 1 |
+| **Models - Diffusion** | `dalle.py`, `imagen.py`, `diffusion_utils.py` | 3 |
+| **Models - Audio** | `wav2vec.py`, `clap.py` | 2 |
+| **Models - Video** | `video_clip.py` | 1 |
+| **Data - Datasets** | `muse.py`, `imagenet.py` | 2 |
+| **Data - Augmentation** | `augmentation.py` | 1 |
+| **Data - Synthetic** | `bias_generator.py`, `privacy_generator.py` | 2 |
+| **Privacy** | `gradient_clipping.py`, `secure_aggregation.py` | 2 |
+| **Utils** | `profiling.py`, `reproducibility.py` | 2 |
+
+**Updated `__init__.py` files:** 10 (all model/data/privacy/utils packages)
+**New test file:** `tests/unit/test_sprint_b.py` — 85 tests
+**Total tests:** 206 passing ✅
 
 ### Sprint C: Examples, Benchmarks & Reproductions (Est. 2 days)
 - 18+ missing example scripts
@@ -577,15 +570,28 @@ from erasus.unlearners import ErasusUnlearner, MultimodalUnlearner
 - GitHub templates
 - Docker GPU Dockerfile
 
-### Sprint F: Research Innovations & Ecosystem (Est. 3 days)
-- Coreset quality analyzer
-- Cross-modal interference tools
-- ErasusBenchmark unified runner
-- Remaining strategies (`vision_text_split`)
-- Remaining selectors (`active_learning`, `weighted_fusion`, `quality_metrics`)
-- Remaining metrics (`clip_score`, `extraction_attack`, `bleu`, `rouge`, etc.)
-- Remaining visualization (`activation`, `influence_maps`, `cross_modal`)
-- Federated unlearner
+### ✅ Sprint F: Research Innovations & Ecosystem — COMPLETED
+
+**17 new files implemented:**
+
+| Category | New Modules | Count |
+|----------|------------|:-----:|
+| **Selectors** | `quality_metrics`, `active_learning`, `weighted_fusion` | 3 |
+| **Strategies** | `vision_text_split` | 1 |
+| **Metrics** | `benchmarks`, `clip_score`, `extraction_attack`, `bleu`, `rouge`, `inception_score`, `downstream_tasks`, `epsilon_delta`, `privacy_audit` | 9 |
+| **Visualization** | `activation`, `influence_maps`, `cross_modal` | 3 |
+| **Unlearners** | `federated_unlearner` | 1 |
+
+**Updated files:**
+- `strategies/__init__.py` — registers 28 strategies
+- `selectors/__init__.py` — registers 22 selectors
+- `metrics/__init__.py` — registers 26+ metrics
+- `visualization/__init__.py` — registers 13 visualization tools
+- `unlearners/__init__.py` — registers 8 unlearner classes
+- `selectors/ensemble/__init__.py` — updated
+- `metrics/utility/__init__.py` — new sub-package init
+
+**New test file:** `tests/unit/test_sprint_f.py` — 34 tests
 
 ### Sprint G: Publishing & Community (Est. 2 days)
 - CITATION.cff, CONTRIBUTING.md, CODE_OF_CONDUCT.md, LICENSE

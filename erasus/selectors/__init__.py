@@ -30,8 +30,15 @@ from erasus.selectors.learning_based.forgetting_events import ForgettingEventsSe
 from erasus.selectors.learning_based.data_shapley import DataShapleySelector
 from erasus.selectors.learning_based.valuation_network import ValuationNetworkSelector
 
+# Learning-based (new)
+from erasus.selectors.learning_based.active_learning import ActiveLearningSelector
+
 # Ensemble
 from erasus.selectors.ensemble.voting import VotingSelector
+from erasus.selectors.ensemble.weighted_fusion import WeightedFusionSelector
+
+# Quality analysis
+from erasus.selectors.quality_metrics import CoresetQualityAnalyzer
 
 __all__ = [
     "RandomSelector",
@@ -53,4 +60,7 @@ __all__ = [
     "DataShapleySelector",
     "ValuationNetworkSelector",
     "VotingSelector",
+    "ActiveLearningSelector",
+    "WeightedFusionSelector",
+    "CoresetQualityAnalyzer",
 ]
