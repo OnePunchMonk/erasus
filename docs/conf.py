@@ -20,7 +20,6 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
-    "sphinx_rtd_theme",
 ]
 
 autodoc_default_options = {
