@@ -51,12 +51,19 @@ class GradientNormSelector(BaseSelector):
             if isinstance(batch, (list, tuple)):
                 inputs = batch[0].to(device)
                 labels = batch[1].to(device) if len(batch) > 1 else None
-            elif isinstance(batch, dict): 
-                 # Handle generic HF style dicts
-                 inputs = batch.get("input_ids") or batch.get("pixel_values")
-                 inputs = inputs.to(device)
-                 labels = batch.get("labels")
-                 if labels is not None: labels = labels.to(device)
+            elif isinstance(batch, dict):
+                # Handle generic HF style dicts (avoid "or" on Tensors: boolean is ambiguous)
+                inputs = batch.get("input_ids")
+                if inputs is None:
+                    inputs = batch.get("pixel_values")
+                if inputs is None:
+                    raise ValueError(
+                        "Batch dict must contain 'input_ids' or 'pixel_values' for gradient_norm selector."
+                    )
+                inputs = inputs.to(device)
+                labels = batch.get("labels")
+                if labels is not None:
+                    labels = labels.to(device)
             else:
                 inputs = batch.to(device)
                 labels = None
