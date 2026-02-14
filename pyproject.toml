@@ -1,9 +1,9 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "erasus-unlearn"
+name = "erasus"
 version = "0.1.0"
 description = "Efficient Representative And Surgical Unlearning Selection — Universal Machine Unlearning via Coreset Selection"
 readme = "README.md"
@@ -40,6 +40,11 @@ full = [
     "seaborn>=0.12",
     "wandb>=0.15",
     "peft>=0.5",
+    "huggingface_hub>=0.20",
+]
+hub = [
+    "huggingface_hub>=0.20",
+    "datasets>=2.14",
 ]
 dev = [
     "pytest>=7.4",

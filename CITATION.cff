@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use Erasus in your research, please cite it as below."
+title: "Erasus: A Universal Machine Unlearning Framework"
+authors:
+  - family-names: "Aggarwal"
+    given-names: "Avaya"
+type: software
+license: Apache-2.0
+repository-code: "https://github.com/OnePunchMonk/erasus"
+url: "https://erasus.readthedocs.io"
+version: "0.1.0"
+date-released: "2026-02-14"
+keywords:
+  - machine-unlearning
+  - privacy
+  - deep-learning
+  - pytorch
+  - multimodal
+abstract: >-
+  Erasus is a universal machine unlearning framework providing
+  28 strategies, 22 selectors, and 26+ metrics across vision,
+  language, diffusion, audio, and video modalities. It supports
+  both approximate and certified unlearning with differential
+  privacy integration.

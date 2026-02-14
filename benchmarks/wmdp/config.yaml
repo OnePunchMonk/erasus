@@ -1,0 +1,27 @@
+# WMDP Benchmark Configuration
+benchmark:
+  name: wmdp
+  description: "Weapons of Mass Destruction Proxy benchmark"
+
+data:
+  subset: "bio"   # bio or cyber
+  forget_size: 200
+  retain_size: 800
+  seq_length: 64
+  batch_size: 32
+
+strategies:
+  - gradient_ascent
+  - negative_gradient
+  - scrub
+
+training:
+  epochs: 5
+  learning_rate: 1e-3
+
+metrics:
+  - accuracy
+
+output:
+  dir: "benchmarks/wmdp/results"
+  format: "json"
