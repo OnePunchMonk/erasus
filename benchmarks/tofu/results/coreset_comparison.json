@@ -2,18 +2,18 @@
   "active_learning": {
     "selector": "active_learning",
     "status": "OK",
-    "time_s": 1.215,
-    "forget_accuracy": 0.105,
-    "retain_accuracy": 0.1875,
+    "time_s": 1.632,
+    "forget_accuracy": 0.125,
+    "retain_accuracy": 0.1837,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 12
+    "rank": 18
   },
   "auto": {
     "selector": "auto",
     "status": "ERROR",
-    "error": "One of the differentiated Tensors appears to not have been used in the graph. Se",
+    "error": "inconsistent tensor size, expected tensor [6923] and src [6922] to have the same",
     "time_s": 0,
     "forget_accuracy": null,
     "retain_accuracy": null,
@@ -25,53 +25,53 @@
   "data_shapley": {
     "selector": "data_shapley",
     "status": "OK",
-    "time_s": 1.158,
-    "forget_accuracy": 0.095,
-    "retain_accuracy": 0.18,
+    "time_s": 0.639,
+    "forget_accuracy": 0.085,
+    "retain_accuracy": 0.1862,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 10
+    "rank": 7
   },
   "el2n": {
     "selector": "el2n",
     "status": "OK",
-    "time_s": 1.241,
-    "forget_accuracy": 0.13,
-    "retain_accuracy": 0.1925,
+    "time_s": 0.411,
+    "forget_accuracy": 0.105,
+    "retain_accuracy": 0.1963,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 17
+    "rank": 15
   },
   "forgetting_events": {
     "selector": "forgetting_events",
     "status": "OK",
-    "time_s": 1.901,
-    "forget_accuracy": 0.11,
-    "retain_accuracy": 0.2062,
+    "time_s": 0.383,
+    "forget_accuracy": 0.075,
+    "retain_accuracy": 0.1812,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 13
+    "rank": 4
   },
   "forgetting_score": {
     "selector": "forgetting_score",
     "status": "OK",
-    "time_s": 0.883,
-    "forget_accuracy": 0.095,
-    "retain_accuracy": 0.1913,
+    "time_s": 0.686,
+    "forget_accuracy": 0.085,
+    "retain_accuracy": 0.1787,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 9
+    "rank": 8
   },
   "full": {
     "selector": "full",
     "status": "OK",
-    "time_s": 0.834,
-    "forget_accuracy": 0.035,
-    "retain_accuracy": 0.175,
+    "time_s": 0.35,
+    "forget_accuracy": 0.03,
+    "retain_accuracy": 0.1775,
     "coreset_size": 200,
     "original_forget_size": 200,
     "compression_ratio": 1.0,
@@ -80,51 +80,51 @@
   "glister": {
     "selector": "glister",
     "status": "OK",
-    "time_s": 0.74,
-    "forget_accuracy": 0.09,
-    "retain_accuracy": 0.1825,
+    "time_s": 0.248,
+    "forget_accuracy": 0.075,
+    "retain_accuracy": 0.1888,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 6
+    "rank": 3
   },
   "grad_match": {
     "selector": "grad_match",
     "status": "OK",
-    "time_s": 3.082,
-    "forget_accuracy": 0.115,
-    "retain_accuracy": 0.18,
+    "time_s": 0.276,
+    "forget_accuracy": 0.1,
+    "retain_accuracy": 0.1963,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 15
+    "rank": 13
   },
   "gradient_norm": {
     "selector": "gradient_norm",
     "status": "OK",
-    "time_s": 1.325,
-    "forget_accuracy": 0.12,
-    "retain_accuracy": 0.175,
+    "time_s": 0.48,
+    "forget_accuracy": 0.1,
+    "retain_accuracy": 0.1713,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 16
+    "rank": 14
   },
   "herding": {
     "selector": "herding",
     "status": "OK",
-    "time_s": 0.764,
+    "time_s": 0.254,
     "forget_accuracy": 0.09,
-    "retain_accuracy": 0.1925,
+    "retain_accuracy": 0.185,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 5
+    "rank": 10
   },
   "influence": {
     "selector": "influence",
     "status": "ERROR",
-    "error": "One of the differentiated Tensors appears to not have been used in the graph. Se",
+    "error": "inconsistent tensor size, expected tensor [6923] and src [6922] to have the same",
     "time_s": 0,
     "forget_accuracy": null,
     "retain_accuracy": null,
@@ -136,90 +136,89 @@
   "kcenter": {
     "selector": "kcenter",
     "status": "OK",
-    "time_s": 0.731,
-    "forget_accuracy": 0.09,
+    "time_s": 0.224,
+    "forget_accuracy": 0.075,
     "retain_accuracy": 0.175,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 8
+    "rank": 5
   },
   "kmeans": {
     "selector": "kmeans",
     "status": "OK",
-    "time_s": 3.188,
-    "forget_accuracy": 0.115,
-    "retain_accuracy": 0.1963,
+    "time_s": 3.154,
+    "forget_accuracy": 0.09,
+    "retain_accuracy": 0.195,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 14
+    "rank": 9
   },
   "random": {
     "selector": "random",
     "status": "OK",
-    "time_s": 0.864,
-    "forget_accuracy": 0.085,
-    "retain_accuracy": 0.1862,
-    "coreset_size": 40,
-    "original_forget_size": 200,
-    "compression_ratio": 0.2,
-    "rank": 3
-  },
-  "representer": {
-    "selector": "representer",
-    "status": "ERROR",
-    "error": "One of the differentiated Tensors appears to not have been used in the graph. Se",
-    "time_s": 0,
-    "forget_accuracy": null,
-    "retain_accuracy": null,
-    "coreset_size": null,
-    "original_forget_size": 200,
-    "compression_ratio": null,
-    "rank": "-"
-  },
-  "submodular": {
-    "selector": "submodular",
-    "status": "OK",
-    "time_s": 1.559,
-    "forget_accuracy": 0.085,
-    "retain_accuracy": 0.1963,
+    "time_s": 0.221,
+    "forget_accuracy": 0.07,
+    "retain_accuracy": 0.1875,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
     "rank": 2
   },
-  "tracin": {
-    "selector": "tracin",
+  "representer": {
+    "selector": "representer",
     "status": "OK",
-    "time_s": 1.674,
+    "time_s": 0.345,
     "forget_accuracy": 0.095,
-    "retain_accuracy": 0.1787,
+    "retain_accuracy": 0.17,
+    "coreset_size": 40,
+    "original_forget_size": 200,
+    "compression_ratio": 0.2,
+    "rank": 12
+  },
+  "submodular": {
+    "selector": "submodular",
+    "status": "OK",
+    "time_s": 0.24,
+    "forget_accuracy": 0.095,
+    "retain_accuracy": 0.18,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
     "rank": 11
   },
-  "valuation_network": {
-    "selector": "valuation_network",
+  "tracin": {
+    "selector": "tracin",
     "status": "OK",
-    "time_s": 0.574,
-    "forget_accuracy": 0.085,
-    "retain_accuracy": 0.1862,
+    "time_s": 0.402,
+    "forget_accuracy": 0.105,
+    "retain_accuracy": 0.17,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 4
+    "rank": 16
+  },
+  "valuation_network": {
+    "selector": "valuation_network",
+    "status": "OK",
+    "time_s": 0.349,
+    "forget_accuracy": 0.085,
+    "retain_accuracy": 0.1913,
+    "coreset_size": 40,
+    "original_forget_size": 200,
+    "compression_ratio": 0.2,
+    "rank": 6
   },
   "voting": {
     "selector": "voting",
     "status": "OK",
-    "time_s": 0.96,
-    "forget_accuracy": 0.09,
-    "retain_accuracy": 0.1812,
+    "time_s": 0.431,
+    "forget_accuracy": 0.115,
+    "retain_accuracy": 0.1688,
     "coreset_size": 40,
     "original_forget_size": 200,
     "compression_ratio": 0.2,
-    "rank": 7
+    "rank": 17
   }
 }

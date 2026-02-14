@@ -53,7 +53,9 @@ class RepresenterSelector(BaseSelector):
              for batch in target_loader:
                  inputs = batch[0].to(device)
                  labels = batch[1].to(device) if len(batch) > 1 else None
-                 loss = nn.functional.cross_entropy(model(inputs), labels)
+                 out = model(inputs)
+                 logits = out.logits if hasattr(out, "logits") else out
+                 loss = nn.functional.cross_entropy(logits, labels)
                  loss.backward()
              
              target_grads = [p.grad.detach().flatten() for p in model.parameters() if p.grad is not None]
@@ -70,13 +72,17 @@ class RepresenterSelector(BaseSelector):
             for b in range(batch_size):
                 model.zero_grad()
                 out = model(inputs[b:b+1])
+                logits = out.logits if hasattr(out, "logits") else out
                 # Logistic loss or CrossEntropy
-                l = nn.functional.cross_entropy(out, labels[b:b+1]) if labels is not None else out.sum()
+                l = nn.functional.cross_entropy(logits, labels[b:b+1]) if labels is not None else logits.sum()
                 
-                # Grads
+                # Grads (allow_unused so params not in graph e.g. logit_scale) don't error)
                 params = [p for p in model.parameters() if p.requires_grad]
-                g = torch.autograd.grad(l, params)
-                flat_g = torch.cat([gi.flatten() for gi in g])
+                g = torch.autograd.grad(l, params, allow_unused=True)
+                flat_g = torch.cat([
+                    gi.flatten() if gi is not None else torch.zeros(pi.numel(), device=pi.device, dtype=pi.dtype)
+                    for gi, pi in zip(g, params)
+                ])
                 
                 if target_vec is not None:
                     # Influence on target
