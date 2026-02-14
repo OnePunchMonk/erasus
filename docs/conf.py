@@ -43,11 +43,10 @@ intersphinx_mapping = {
 }
 
 # -- Options for HTML output ---
-html_theme = "sphinx_rtd_theme"
-html_static_path = ["_static"]
+html_theme = "alabaster"
 
 html_theme_options = {
-    "navigation_depth": 4,
-    "collapse_navigation": False,
-    "sticky_navigation": True,
+    "description": "Documentation for Erasus",
+    "sidebar_width": "240px",
+    "page_width": "1000px",
 }
