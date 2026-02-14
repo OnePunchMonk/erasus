@@ -1,0 +1,42 @@
+# MUSE Benchmark Configuration
+benchmark:
+  name: muse
+  description: "Machine Unlearning Six-way Evaluation"
+
+data:
+  subset: "news"           # news or books
+  forget_size: 500
+  retain_size: 2000
+  holdout_size: 500
+  test_size: 1000
+  seq_length: 128
+  batch_size: 32
+
+strategies:
+  - gradient_ascent
+  - negative_gradient
+  - fisher_forgetting
+  - scrub
+
+training:
+  epochs: 10
+  learning_rate: 1e-3
+  weight_decay: 0.01
+
+metrics:
+  - accuracy
+  - mia
+  - kl_divergence
+
+evaluation:
+  dimensions:
+    - forgetting_quality    # How well forget data is unlearned
+    - model_utility         # Retain/test set performance
+    - privacy               # MIA resistance
+    - efficiency            # Time and compute cost
+    - robustness            # Stability across runs
+
+output:
+  dir: "benchmarks/muse/results"
+  format: "json"
+  save_models: false

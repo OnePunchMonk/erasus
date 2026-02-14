@@ -21,6 +21,7 @@ architectures across vision, language, diffusion, audio, and video modalities.
    guide/selectors
    guide/metrics
    guide/visualization
+   user_guide/huggingface
 
 .. toctree::
    :maxdepth: 2

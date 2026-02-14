@@ -1,0 +1,30 @@
+# TOFU Benchmark Configuration
+benchmark:
+  name: tofu
+  description: "Task of Fictitious Unlearning"
+
+data:
+  forget_size: 128
+  retain_size: 512
+  seq_length: 32
+  vocab_size: 256
+  batch_size: 32
+
+strategies:
+  - gradient_ascent
+  - negative_gradient
+
+selectors:
+  - null    # Full forget set
+  - random  # Random coreset
+
+training:
+  epochs: 5
+  learning_rate: 1e-3
+
+metrics:
+  - accuracy
+
+output:
+  dir: "benchmarks/tofu/results"
+  format: "json"
