@@ -102,7 +102,9 @@ class FIDMetric(BaseMetric):
         for batch in loader:
             imgs = None
             if isinstance(batch, dict):
-                imgs = batch.get(input_key) or batch.get("images")
+                imgs = batch.get(input_key)
+                if imgs is None:
+                    imgs = batch.get("images")
             elif isinstance(batch, (list, tuple)):
                 imgs = batch[0]
             elif isinstance(batch, torch.Tensor):
