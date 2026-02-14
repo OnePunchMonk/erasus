@@ -208,8 +208,13 @@ class ModalityDecouplingStrategy(BaseStrategy):
                 attention_mask = attention_mask.to(device)
             return pixel_values, input_ids, attention_mask
 
-        # tuple / list
+        # tuple / list: (x, y) for classification or (pixel_values, input_ids[, attention_mask])
         pixel_values = batch[0].to(device)
-        input_ids = batch[1].to(device)
+        second = batch[1].to(device) if len(batch) > 1 else pixel_values
+        # If second is 1D (class labels), use pixel_values for both modalities
+        if second.dim() == 1 or (second.dim() == 2 and second.size(-1) == 1):
+            input_ids = pixel_values
+        else:
+            input_ids = second
         attention_mask = batch[2].to(device) if len(batch) > 2 else None
         return pixel_values, input_ids, attention_mask

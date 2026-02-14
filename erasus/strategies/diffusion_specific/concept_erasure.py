@@ -46,7 +46,18 @@ class ConceptErasureStrategy(BaseStrategy):
     ) -> Tuple[nn.Module, List[float], List[float]]:
         """
         Requires the model to have: .unet, .text_encoder, .tokenizer, .scheduler
+        Falls back to gradient ascent when model lacks diffusion components.
         """
+        has_diffusion = (
+            hasattr(model, "unet")
+            and hasattr(model, "scheduler")
+            and model.scheduler is not None
+            and hasattr(model, "tokenizer")
+            and model.tokenizer is not None
+        )
+        if not has_diffusion:
+            return self._fallback_gradient_ascent(model, forget_loader, retain_loader, epochs)
+
         optimizer = torch.optim.Adam(model.unet.parameters(), lr=self.lr)
         device = next(model.unet.parameters()).device
         forget_losses: List[float] = []
@@ -100,6 +111,35 @@ class ConceptErasureStrategy(BaseStrategy):
                 retain_losses.append(step_retain / max(len(retain_prompts), 1))
 
         return model, forget_losses, retain_losses
+
+    def _fallback_gradient_ascent(
+        self,
+        model: nn.Module,
+        forget_loader: DataLoader,
+        retain_loader: Optional[DataLoader],
+        epochs: int,
+    ) -> Tuple[nn.Module, List[float], List[float]]:
+        """Gradient ascent fallback for non-diffusion models."""
+        device = next(model.parameters()).device
+        optimizer = torch.optim.Adam(model.parameters(), lr=self.lr)
+        model.train()
+        forget_losses = []
+        for _ in range(epochs):
+            epoch_loss = 0.0
+            n = 0
+            for batch in forget_loader:
+                inputs = batch[0].to(device)
+                labels = batch[1].to(device) if len(batch) > 1 else None
+                optimizer.zero_grad()
+                outputs = model(inputs)
+                logits = outputs.logits if hasattr(outputs, "logits") else outputs
+                loss = -F.cross_entropy(logits, labels) if labels is not None else -logits.sum()
+                loss.backward()
+                optimizer.step()
+                epoch_loss += (-loss.item())
+                n += 1
+            forget_losses.append(epoch_loss / max(n, 1))
+        return model, forget_losses, []
 
     @staticmethod
     def _encode_prompt(model, prompt: str, device) -> torch.Tensor:

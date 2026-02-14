@@ -101,8 +101,9 @@ class SelectiveSynapticDampeningStrategy(BaseStrategy):
             for name, module in model.named_modules():
                 if name in masks:
                     mask = masks[name].to(module.weight.device)
+                    # Weight shape (out_features, in_features); mask from output dim (out_features)
                     module.weight.data *= (
-                        1 - (1 - self.damping_factor) * mask.unsqueeze(0)
+                        1 - (1 - self.damping_factor) * mask.unsqueeze(1)
                     )
                     if module.bias is not None:
                         module.bias.data *= (1 - (1 - self.damping_factor) * mask)
