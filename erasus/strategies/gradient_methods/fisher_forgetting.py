@@ -94,9 +94,9 @@ class FisherForgettingStrategy(BaseStrategy):
                 # Fisher Elastic Weight Consolidation (EWC) Penalty
                 # L_ewc = Σ F_i * (θ_i - θ_orig_i)²
                 loss_ewc = 0.0
-                for n, p in model.named_parameters():
-                    if n in fisher_diag and p.requires_grad:
-                        _loss = (fisher_diag[n] * (p - original_params[n]).pow(2)).sum()
+                for param_name, p in model.named_parameters():
+                    if param_name in fisher_diag and p.requires_grad:
+                        _loss = (fisher_diag[param_name] * (p - original_params[param_name]).pow(2)).sum()
                         loss_ewc += _loss
                 
                 # Total Loss: Minimize ( L_forget + λ * L_ewc )

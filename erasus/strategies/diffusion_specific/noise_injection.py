@@ -68,9 +68,13 @@ class NoiseInjectionStrategy(BaseStrategy):
             epoch_loss = 0.0
             n = 0
             for batch in forget_loader:
-                # Batch is (images, texts)
-                pixel_values = batch["pixel_values"].to(device)
-                input_ids = batch["input_ids"].to(device)
+                # Batch: dict (HF) or tuple (x, y)
+                if isinstance(batch, dict):
+                    pixel_values = batch["pixel_values"].to(device)
+                    input_ids = batch["input_ids"].to(device)
+                else:
+                    pixel_values = batch[0].to(device)
+                    input_ids = batch[1].to(device) if len(batch) > 1 else batch[0].to(device)
                 
                 optimizer.zero_grad()
                 
@@ -95,10 +99,15 @@ class NoiseInjectionStrategy(BaseStrategy):
                         target_override="empty" # Hypothetical flag for wrapper
                     )
                 else:
-                    # Fallback dummy if wrapper not fully compliant
-                    # Just standard GA
-                    output = model(input_ids) # Dummy
-                    loss = -output.sum() 
+                    # Fallback: gradient ascent for generic (x, y) batch
+                    outputs = model(pixel_values)
+                    logits = outputs.logits if hasattr(outputs, "logits") else outputs
+                    labels = input_ids if input_ids.dim() == 1 or input_ids.size(-1) == 1 else None
+                    if labels is not None and labels.numel() == pixel_values.size(0):
+                        labels = labels.squeeze(-1) if labels.dim() > 1 else labels
+                        loss = -torch.nn.functional.cross_entropy(logits, labels)
+                    else:
+                        loss = -logits.sum() 
 
                 loss.backward()
                 optimizer.step()

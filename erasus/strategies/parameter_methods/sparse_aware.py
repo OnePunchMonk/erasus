@@ -75,9 +75,9 @@ class SparseAwareUnlearningStrategy(BaseStrategy):
 
                 # Sparsity penalty: L1 norm of (theta - theta_orig)
                 loss_sparse = 0.0
-                for n, p in model.named_parameters():
-                    if n in original_params and p.requires_grad:
-                        loss_sparse += torch.norm(p - original_params[n], p=1)
+                for param_name, p in model.named_parameters():
+                    if param_name in original_params and p.requires_grad:
+                        loss_sparse += torch.norm(p - original_params[param_name], p=1)
                 
                 total_loss = loss_forget + self.sparsity_weight * loss_sparse
                 
