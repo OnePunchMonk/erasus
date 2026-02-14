@@ -464,10 +464,10 @@ Erasus integrates and builds upon these key works:
 - [x] Callbacks & early stopping
 - [x] 340+ passing tests
 - [x] Additional model architectures (Flamingo, T5, DALL-E, Wav2Vec)
-- [ ] HuggingFace Hub integration
+- [x] HuggingFace Hub integration
 - [ ] Interactive Gradio/Streamlit dashboard
 - [ ] Tutorial notebooks
-- [ ] PyPI release
+- [x] PyPI release
 
 ---
 
