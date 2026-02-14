@@ -1,0 +1,15 @@
+{
+  "mode": "demo",
+  "model": "MiniStableDiffusion",
+  "strategy": "concept_erasure",
+  "epochs": 50,
+  "lr": 1e-05,
+  "nsfw_loss_before": 1.029645700454712,
+  "nsfw_loss_after": 1.055172448158264,
+  "safe_loss_before": 1.0337868189811708,
+  "safe_loss_after": 1.0614105200767516,
+  "forget_effectiveness_pct": 2.4791778076943367,
+  "retain_preservation_pct": 97.32791126870771,
+  "total_weight_delta": 0.20564415375702083,
+  "elapsed_seconds": 18.720877408981323
+}

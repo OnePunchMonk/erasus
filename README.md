@@ -410,8 +410,14 @@ Run standardized benchmarks:
 # TOFU Benchmark (LLM unlearning)
 python benchmarks/tofu/run.py --strategies gradient_ascent,scrub --epochs 5
 
-# WMDP Benchmark (hazardous knowledge)
-python benchmarks/wmdp/run.py --subsets bio,cyber
+# Coreset comparison (knowledge_distillation × all selectors)
+python benchmarks/tofu/run_coreset_comparison.py
+
+# MUSE Benchmark (all strategies, leaderboard)
+python benchmarks/muse/run_all_strategies.py
+
+# WMDP Benchmark (hazardous knowledge, all strategies)
+python benchmarks/wmdp/run_all_strategies.py --subsets bio,cyber
 
 # Full suite
 bash scripts/run_benchmarks.sh
@@ -428,9 +434,14 @@ bash scripts/run_benchmarks.sh
 | [LLaMA Concept Removal](examples/language_models/llama_concept_removal.py) | Remove concepts from LLaMA |
 | [GPT-2 Strategy Comparison](examples/language_models/gpt2_unlearning.py) | Compare gradient_ascent vs. negative_gradient |
 | [LoRA Efficient Unlearning](examples/language_models/lora_efficient_unlearning.py) | Parameter-efficient unlearning |
-| [SD NSFW Removal](examples/diffusion_models/stable_diffusion_nsfw.py) | Remove NSFW concepts |
+| [SD NSFW Removal](examples/diffusion_models/stable_diffusion_nsfw.py) | Remove NSFW concepts ([Notebook](notebooks/nsfw_removal_stable_diffusion.ipynb)) |
 | [SD Artist Removal](examples/diffusion_models/stable_diffusion_artist.py) | Remove artist styles |
-| [TOFU Benchmark](examples/benchmarks/run_tofu_benchmark.py) | End-to-end benchmark |
+| [TOFU Benchmark](examples/benchmarks/run_tofu_benchmark.py) | End-to-end benchmark ([Leaderboard](benchmarks/tofu/TOFU_LEADERBOARD.md)) |
+| [Coreset Comparison](benchmarks/tofu/run_coreset_comparison.py) | knowledge_distillation × all selectors |
+| [MUSE Leaderboard](benchmarks/muse/MUSE_LEADERBOARD.md) | All strategies on MUSE-style data |
+| [WMDP Leaderboard](benchmarks/wmdp/WMDP_LEADERBOARD_BIO.md) | All strategies on WMDP hazardous knowledge |
+| [CLIP Object Removal](notebooks/clip_unlearning_demo.ipynb) | Remove visual concepts from VLM (MiniCLIP demo) |
+| [Code Copyright Removal](notebooks/copyright_removal_example.ipynb) | Remove proprietary code from LLM (MiniCodeGPT demo) |
 
 ---
 
