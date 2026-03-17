@@ -38,6 +38,14 @@ from erasus.metrics.privacy.epsilon_delta import EpsilonDeltaMetric
 from erasus.metrics.privacy.privacy_audit import PrivacyAuditMetric
 from erasus.metrics.benchmarks import ErasusBenchmark
 
+# Verification metrics (MIA suite, memorization)
+from erasus.metrics.forgetting.mia_suite import MIASuite
+from erasus.metrics.forgetting.memorization import (
+    ExtractionStrengthMetric,
+    ExactMemorizationMetric,
+    VerbatimMemorizationMetric,
+)
+
 # Register all metrics for CLI / registry-based resolution
 for name, cls in [
     ("accuracy", AccuracyMetric),
@@ -53,6 +61,10 @@ for name, cls in [
     ("time_complexity", TimeComplexityMetric),
     ("memory_usage", MemoryUsageMetric),
     ("dp_evaluation", DPEvaluationMetric),
+    ("mia_suite", MIASuite),
+    ("extraction_strength", ExtractionStrengthMetric),
+    ("exact_memorization", ExactMemorizationMetric),
+    ("verbatim_memorization", VerbatimMemorizationMetric),
 ]:
     try:
         metric_registry.register(name)(cls)
@@ -89,4 +101,9 @@ __all__ = [
     "EpsilonDeltaMetric",
     "PrivacyAuditMetric",
     "ErasusBenchmark",
+    # Verification metrics
+    "MIASuite",
+    "ExtractionStrengthMetric",
+    "ExactMemorizationMetric",
+    "VerbatimMemorizationMetric",
 ]
