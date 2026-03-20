@@ -10,6 +10,7 @@ from erasus.strategies.gradient_methods.modality_decoupling import ModalityDecou
 from erasus.strategies.gradient_methods.scrub import SCRUBStrategy
 from erasus.strategies.gradient_methods.fisher_forgetting import FisherForgettingStrategy
 from erasus.strategies.gradient_methods.negative_gradient import NegativeGradientStrategy
+from erasus.strategies.gradient_methods.weighted_gradient_ascent import WGAStrategy
 
 # Parameter methods
 from erasus.strategies.parameter_methods.lora_unlearning import LoRAUnlearningStrategy
@@ -32,6 +33,7 @@ from erasus.strategies.llm_specific.causal_tracing import CausalTracingStrategy
 from erasus.strategies.diffusion_specific.concept_erasure import ConceptErasureStrategy
 from erasus.strategies.diffusion_specific.noise_injection import NoiseInjectionStrategy
 from erasus.strategies.diffusion_specific.unet_surgery import UNetSurgeryStrategy
+from erasus.strategies.diffusion_specific.meta_unlearning import MetaUnlearningStrategy
 
 # VLM-specific
 from erasus.strategies.vlm_specific.contrastive_unlearning import ContrastiveUnlearningStrategy
@@ -49,6 +51,15 @@ from erasus.strategies.data_methods.knowledge_distillation import KnowledgeDisti
 
 # New LLM-specific
 from erasus.strategies.llm_specific.attention_surgery import AttentionSurgeryStrategy
+from erasus.strategies.llm_specific.npo import NPOStrategy
+from erasus.strategies.llm_specific.simnpo import SimNPOStrategy
+from erasus.strategies.llm_specific.altpo import AltPOStrategy
+from erasus.strategies.llm_specific.flat import FLATStrategy
+from erasus.strategies.llm_specific.rmu import RMUStrategy
+from erasus.strategies.llm_specific.undial import UNDIALStrategy
+
+# Inference-time strategies
+from erasus.strategies.inference_time.dexperts import DExpertsStrategy
 
 # New diffusion-specific
 from erasus.strategies.diffusion_specific.timestep_masking import TimestepMaskingStrategy
@@ -63,6 +74,7 @@ __all__ = [
     "SCRUBStrategy",
     "FisherForgettingStrategy",
     "NegativeGradientStrategy",
+    "WGAStrategy",
     "SaliencyUnlearningStrategy",
     "LoRAUnlearningStrategy",
     "SparseAwareUnlearningStrategy",
@@ -78,11 +90,19 @@ __all__ = [
     "EmbeddingAlignmentStrategy",
     "CausalTracingStrategy",
     "AttentionSurgeryStrategy",
+    "NPOStrategy",
+    "SimNPOStrategy",
+    "AltPOStrategy",
+    "FLATStrategy",
+    "RMUStrategy",
+    "UNDIALStrategy",
+    "DExpertsStrategy",
     "ConceptErasureStrategy",
     "NoiseInjectionStrategy",
     "UNetSurgeryStrategy",
     "TimestepMaskingStrategy",
     "SafeLatentsStrategy",
+    "MetaUnlearningStrategy",
     "ContrastiveUnlearningStrategy",
     "AttentionUnlearningStrategy",
     "VisionTextSplitStrategy",

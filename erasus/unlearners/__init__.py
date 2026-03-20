@@ -12,6 +12,7 @@ from erasus.unlearners.audio_unlearner import AudioUnlearner
 from erasus.unlearners.video_unlearner import VideoUnlearner
 from erasus.unlearners.multimodal_unlearner import MultimodalUnlearner
 from erasus.unlearners.federated_unlearner import FederatedUnlearner
+from erasus.unlearners.continual_unlearner import ContinualUnlearner, DeletionRequest
 
 __all__ = [
     "ErasusUnlearner",
@@ -22,4 +23,6 @@ __all__ = [
     "VideoUnlearner",
     "MultimodalUnlearner",
     "FederatedUnlearner",
+    "ContinualUnlearner",
+    "DeletionRequest",
 ]
