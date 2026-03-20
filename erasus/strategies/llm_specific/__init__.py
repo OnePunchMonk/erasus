@@ -12,6 +12,10 @@ from erasus.strategies.llm_specific.altpo import AltPOStrategy
 from erasus.strategies.llm_specific.flat import FLATStrategy
 from erasus.strategies.llm_specific.rmu import RMUStrategy
 from erasus.strategies.llm_specific.undial import UNDIALStrategy
+from erasus.strategies.llm_specific.delta_unlearning import (
+    DeltaUnlearningStrategy,
+    DeltaUnlearningWrapper,
+)
 
 __all__ = [
     "SelectiveSynapticDampeningStrategy",
@@ -24,4 +28,6 @@ __all__ = [
     "FLATStrategy",
     "RMUStrategy",
     "UNDIALStrategy",
+    "DeltaUnlearningStrategy",
+    "DeltaUnlearningWrapper",
 ]

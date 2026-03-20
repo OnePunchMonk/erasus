@@ -17,6 +17,10 @@ from erasus.strategies.parameter_methods.lora_unlearning import LoRAUnlearningSt
 from erasus.strategies.parameter_methods.sparse_aware import SparseAwareUnlearningStrategy
 from erasus.strategies.parameter_methods.mask_based import MaskBasedUnlearningStrategy
 from erasus.strategies.parameter_methods.neuron_pruning import NeuronPruningStrategy
+from erasus.strategies.parameter_methods.lora_unlearning_efficient import (
+    LoRAUnlearningStrategy as EfficientLoRAStrategy,
+    LoRAComposition,
+)
 
 # Data methods
 from erasus.strategies.data_methods.amnesiac import AmnesiacUnlearningStrategy
@@ -57,9 +61,11 @@ from erasus.strategies.llm_specific.altpo import AltPOStrategy
 from erasus.strategies.llm_specific.flat import FLATStrategy
 from erasus.strategies.llm_specific.rmu import RMUStrategy
 from erasus.strategies.llm_specific.undial import UNDIALStrategy
+from erasus.strategies.llm_specific.delta_unlearning import DeltaUnlearningStrategy
 
 # Inference-time strategies
 from erasus.strategies.inference_time.dexperts import DExpertsStrategy
+from erasus.strategies.inference_time.activation_steering import ActivationSteeringStrategy
 
 # New diffusion-specific
 from erasus.strategies.diffusion_specific.timestep_masking import TimestepMaskingStrategy
@@ -77,6 +83,8 @@ __all__ = [
     "WGAStrategy",
     "SaliencyUnlearningStrategy",
     "LoRAUnlearningStrategy",
+    "EfficientLoRAStrategy",
+    "LoRAComposition",
     "SparseAwareUnlearningStrategy",
     "MaskBasedUnlearningStrategy",
     "NeuronPruningStrategy",
@@ -96,7 +104,9 @@ __all__ = [
     "FLATStrategy",
     "RMUStrategy",
     "UNDIALStrategy",
+    "DeltaUnlearningStrategy",
     "DExpertsStrategy",
+    "ActivationSteeringStrategy",
     "ConceptErasureStrategy",
     "NoiseInjectionStrategy",
     "UNetSurgeryStrategy",
