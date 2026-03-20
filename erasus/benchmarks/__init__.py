@@ -1,0 +1,34 @@
+"""
+erasus.benchmarks — Machine unlearning benchmark suite.
+
+Provides comprehensive evaluation infrastructure:
+- TOFU benchmark (fictional author QA unlearning)
+- lm-evaluation-harness integration (MMLU, GSM8K, etc.)
+- Benchmark runner (end-to-end evaluation pipeline)
+"""
+
+from erasus.benchmarks.tofu_loader import (
+    TOFUDataset,
+    TOFULoader,
+    TOFUEvaluator,
+)
+from erasus.benchmarks.lm_eval_integration import (
+    LMEvalWrapper,
+    LMEvalBenchmark,
+    BenchmarkComparison,
+)
+from erasus.benchmarks.benchmark_runner import (
+    BenchmarkRunner,
+    BenchmarkResult,
+)
+
+__all__ = [
+    "TOFUDataset",
+    "TOFULoader",
+    "TOFUEvaluator",
+    "LMEvalWrapper",
+    "LMEvalBenchmark",
+    "BenchmarkComparison",
+    "BenchmarkRunner",
+    "BenchmarkResult",
+]
