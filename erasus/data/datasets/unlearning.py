@@ -1,10 +1,9 @@
 """
-Dataset Wrappers.
+UnlearningDataset and ForgetRetainDataset — General-purpose dataset
+wrappers for machine unlearning.
 
-Provides unified interfaces for Forget and Retain sets, including the
-general ``UnlearningDataset`` abstraction that supports sample-level and
-class-level forget specifications, weighted sampling, and streaming
-deletion.
+Provides the ``UnlearningDataset`` abstraction that supports sample-level and
+class-level forget specifications, weighted sampling, and streaming deletion.
 
 Example
 -------
