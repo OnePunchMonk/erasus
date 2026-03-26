@@ -9,8 +9,11 @@ from erasus.data.datasets import (
     MUSEDataset,
     ImageNetDataset,
 )
+from erasus.data.datasets import UnlearningDataset, ForgetRetainDataset
 
 __all__ = [
+    "UnlearningDataset",
+    "ForgetRetainDataset",
     "TOFUDataset",
     "WMDPDataset",
     "COCOCaptionsDataset",

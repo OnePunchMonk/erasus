@@ -15,6 +15,7 @@ architectures across vision, language, diffusion, audio, and video modalities.
    :maxdepth: 2
    :caption: User Guide
 
+   guide/conceptual_guide
    guide/overview
    guide/unlearning_pipeline
    guide/strategies

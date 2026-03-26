@@ -38,22 +38,44 @@ class ErasusUnlearner(BaseUnlearner):
     def __init__(
         self,
         model: nn.Module,
-        strategy: str = "gradient_ascent",
-        selector: Optional[str] = None,
+        strategy: Any = "gradient_ascent",
+        selector: Optional[Any] = None,
         device: Optional[str] = None,
         strategy_kwargs: Optional[Dict[str, Any]] = None,
         selector_kwargs: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> None:
-        # Resolve strategy
-        strategy_cls = strategy_registry.get(strategy)
-        strategy_instance = strategy_cls(**(strategy_kwargs or {}))
+        from erasus.core.base_strategy import BaseStrategy
+        from erasus.core.base_selector import BaseSelector
 
-        # Resolve selector
+        # Resolve strategy: accept string name or instance
+        if isinstance(strategy, str):
+            strategy_cls = strategy_registry.get(strategy)
+            strategy_instance = strategy_cls(**(strategy_kwargs or {}))
+            self.strategy_name = strategy
+        elif isinstance(strategy, BaseStrategy):
+            strategy_instance = strategy
+            self.strategy_name = strategy.__class__.__name__
+        else:
+            raise TypeError(
+                f"strategy must be a string or BaseStrategy instance, got {type(strategy)}"
+            )
+
+        # Resolve selector: accept string name, instance, or None
         selector_instance = None
-        if selector is not None:
+        if isinstance(selector, str):
             selector_cls = selector_registry.get(selector)
             selector_instance = selector_cls(**(selector_kwargs or {}))
+            self.selector_name: Optional[str] = selector
+        elif isinstance(selector, BaseSelector):
+            selector_instance = selector
+            self.selector_name = selector.__class__.__name__
+        elif selector is None:
+            self.selector_name = None
+        else:
+            raise TypeError(
+                f"selector must be a string, BaseSelector instance, or None, got {type(selector)}"
+            )
 
         super().__init__(
             model=model,
@@ -62,8 +84,6 @@ class ErasusUnlearner(BaseUnlearner):
             device=device,
             **kwargs,
         )
-        self.strategy_name = strategy
-        self.selector_name = selector
 
     def _run_unlearning(
         self,

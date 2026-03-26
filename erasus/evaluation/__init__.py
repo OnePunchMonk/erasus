@@ -29,6 +29,12 @@ from erasus.evaluation.relearning import (
     PromptExtractionAttack,
 )
 from erasus.evaluation.verification_suite import UnlearningVerificationSuite
+from erasus.evaluation.benchmark_protocol import (
+    UnlearningBenchmark,
+    BenchmarkReport,
+    MetricResult,
+    MetricSpec,
+)
 
 __all__ = [
     "AdversarialEvaluator",
@@ -41,4 +47,8 @@ __all__ = [
     "LoRARelearningAttack",
     "PromptExtractionAttack",
     "UnlearningVerificationSuite",
+    "UnlearningBenchmark",
+    "BenchmarkReport",
+    "MetricResult",
+    "MetricSpec",
 ]
