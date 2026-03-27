@@ -7,6 +7,7 @@ Selects subset that maximizes log-likelihood on a validation set (approximated b
 
 from __future__ import annotations
 
+import logging
 from typing import Any, List
 
 import numpy as np
@@ -15,7 +16,10 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from erasus.core.base_selector import BaseSelector
+from erasus.core.exceptions import SelectorError
 from erasus.core.registry import selector_registry
+
+logger = logging.getLogger(__name__)
 
 
 @selector_registry.register("glister")
@@ -35,10 +39,11 @@ class GlisterSelector(BaseSelector):
     ) -> List[int]:
         
         if val_loader is None:
-            print("Warning: Glister requires 'val_loader'. Returning Random.")
-            # Fallback
-            from erasus.selectors.random_selector import RandomSelector
-            return RandomSelector().select(model, data_loader, k)
+            raise SelectorError(
+                "GlisterSelector requires a 'val_loader' argument — a DataLoader "
+                "for the validation set used to approximate generalization. Pass it "
+                "as: selector.select(model, loader, k, val_loader=val_loader)"
+            )
 
         # Implementation of greedy selection based on gradient similarity with validation set
         # Often simplified to: Gradient Matching between Train and Validation.

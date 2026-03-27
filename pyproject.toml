@@ -72,6 +72,23 @@ target-version = "py39"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["erasus"]
+omit = ["erasus/visualization/*", "erasus/cli/*"]
+
+[tool.coverage.report]
+fail_under = 50
+show_missing = true
+skip_empty = true
 markers = [
     "real_models: integration tests that download/use real HuggingFace models (deselect with: -m 'not real_models')",
 ]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+check_untyped_defs = true
+disallow_untyped_defs = false

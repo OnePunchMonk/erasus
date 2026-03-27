@@ -1,15 +1,10 @@
 """
-K-Center Selector Alias.
+K-Center Selector — backwards-compatible alias.
 
-This module is an alias for `erasus.selectors.geometry_based.kcenter`.
+The canonical implementation lives in ``kcenter.py`` and is registered
+as ``"kcenter"``.  This module re-exports ``KCenterSelector`` so that
+``from erasus.selectors.geometry_based.k_center import KCenterSelector``
+continues to work.
 """
 
-from erasus.selectors.geometry_based.kcenter import KCenterSelector
-from erasus.core.registry import selector_registry
-
-# Re-register under legacy name just in case, though kcenter registers itself as "kcenter".
-# If "k_center" string is needed, register it.
-try:
-    selector_registry.register("k_center")(KCenterSelector)
-except ValueError:
-    pass
+from erasus.selectors.geometry_based.kcenter import KCenterSelector  # noqa: F401
