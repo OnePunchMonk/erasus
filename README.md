@@ -14,16 +14,35 @@
 
 ---
 
-Erasus surgically removes specific data, concepts, or behaviours from trained models -- without the cost of retraining. It works across **LLMs**, **VLMs**, **Diffusion**, **Audio**, and **Video** models through a single API.
+## The problem
+
+Unlearning 500 samples from a 50B-parameter model shouldn't require touching all 500.
+
+Naive machine unlearning applies expensive operations (gradient ascent, Fisher forgetting, knowledge distillation) to every sample in the forget set. At scale, this costs nearly as much as retraining from scratch -- the very thing unlearning is supposed to avoid.
+
+## The insight
+
+Most samples in a forget set are redundant. They contribute nothing beyond what a handful of boundary and high-influence points already capture. This is the same compression principle behind SVMs (the decision boundary is defined by support vectors, not all training points) and dataset distillation (1000 images can be approximated by a few dozen synthetic ones).
+
+**Erasus finds the support vectors of forgetting.** Coreset selection identifies the minimal subset of forget samples that define what the model actually memorized about that data. You run the expensive unlearning machinery on 5--10% of the samples and approximate what full unlearning would have done -- with bounded utility loss on retained knowledge.
 
 ```python
 from erasus import ErasusUnlearner
 
-unlearner = ErasusUnlearner(model, strategy="auto", selector="influence")
+unlearner = ErasusUnlearner(model, strategy="gradient_ascent", selector="influence")
 result = unlearner.fit(forget_data=forget_loader, retain_data=retain_loader, epochs=5)
+# Coreset selection automatically reduces the forget set to the most influential samples
 ```
 
-The core insight: **coreset selection finds the minimal set of samples that define forgetting** -- unlearning 10% of the most influential samples can approximate unlearning 100% with bounded utility loss.
+## Why this matters
+
+| Approach | Forget set processed | Cost vs. retraining |
+|----------|---------------------|---------------------|
+| Full retraining | N/A (retrain on retain set) | 1.0x |
+| Naive unlearning | 100% of forget set | ~0.3--0.8x |
+| **Coreset unlearning** | **5--10% of forget set** | **~0.02--0.08x** |
+
+The coreset approach doesn't just save compute -- it often produces *better* forgetting quality because it focuses the unlearning signal on the samples that matter most, avoiding noise from redundant points.
 
 ---
 
@@ -34,9 +53,11 @@ Forget data + Retain data  -->  Coreset selection  -->  Targeted unlearning  -->
                                (24 selectors)          (41 strategies)          (25+ metrics)
 ```
 
-1. **Select** the minimal representative subset (coreset) from the forget set
-2. **Unlearn** by applying a strategy (gradient ascent, Fisher forgetting, SCRUB, NPO, etc.)
+1. **Select** the minimal representative subset (coreset) from the forget set using influence functions, gradient geometry, or learning-based methods
+2. **Unlearn** by applying a strategy (gradient ascent, Fisher forgetting, SCRUB, NPO, etc.) to the coreset only
 3. **Verify** via membership inference attacks, accuracy checks, and certified removal bounds
+
+This works across **LLMs**, **VLMs**, **Diffusion**, **Audio**, and **Video** models through a single API.
 
 ---
 
@@ -154,6 +175,62 @@ erasus evaluate --protocol general --include-privacy
 
 ---
 
+## Theoretical foundation
+
+Erasus provides formal guarantees through two mechanisms:
+
+### PAC-learning utility bounds
+
+If you select the top-*k*% of samples by influence score, the utility loss on retained data is bounded:
+
+```
+utility_drop ≤ (k/n) * ε_gen + sqrt(2(k/n) * log(1/δ))
+```
+
+where `ε_gen` is the VC-dimension generalization bound and `δ` is the confidence parameter. This means coreset selection doesn't just work empirically -- there's a provable relationship between coreset size and retained model quality.
+
+```python
+from erasus.certification.bounds import TheoreticalBounds
+
+bounds = TheoreticalBounds.pac_utility_bound(
+    n_total=50000, n_forget=500, n_retain=49500, delta=0.05, model=model
+)
+print(f"Utility drop bound: {bounds['pac_utility_drop_bound']:.4f}")
+print(f"Confidence: {bounds['confidence']:.0%}")
+```
+
+### Certified removal verification
+
+(epsilon, delta)-certified removal verification ensures the unlearned model is statistically indistinguishable from a model retrained from scratch:
+
+```python
+from erasus.certification import CertifiedRemovalVerifier
+
+verifier = CertifiedRemovalVerifier(epsilon=1.0, delta=1e-5)
+result = verifier.verify(unlearned_model, retrained_model, n_total=10000, n_forget=500)
+```
+
+---
+
+## Reproducing the core result
+
+The central empirical claim -- that small coresets approximate full-set unlearning -- can be validated with the included benchmark scripts:
+
+```bash
+# Coreset fraction ablation: sweeps 1%-100% and compares forgetting quality vs retained accuracy
+python benchmarks/tofu/run_coreset_ablation.py
+
+# Generate tradeoff curves across selector types
+python benchmarks/tofu/run_tradeoff_curves.py
+
+# Compare all coreset selectors head-to-head
+python benchmarks/tofu/run_coreset_comparison.py
+```
+
+See [`benchmarks/tofu/`](benchmarks/tofu/) for details and pre-generated results.
+
+---
+
 ## Strategies (41)
 
 | Category | Methods |
@@ -197,16 +274,6 @@ erasus evaluate --protocol general --include-privacy
 from erasus.metrics import MetricSuite
 results = MetricSuite(["accuracy", "mia"]).run(model, forget_loader, retain_loader)
 ```
-
-Certification with formal bounds:
-
-```python
-from erasus.certification import CertifiedRemovalVerifier
-verifier = CertifiedRemovalVerifier(epsilon=1.0, delta=1e-5)
-result = verifier.verify(unlearned_model, retrained_model, n_total=10000, n_forget=500)
-```
-
----
 
 ## Performance features
 
