@@ -5,6 +5,8 @@ Usage::
 
     erasus unlearn --config configs/default.yaml
     erasus unlearn --config my_run.yaml --device cuda --epochs 20
+    erasus unlearn --config my_run.yaml --coreset-from influence --coreset-k 100
+    erasus unlearn --config my_run.yaml --validate-every 2 --early-stop-patience 3
 """
 
 from __future__ import annotations
@@ -52,6 +54,38 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         "--retain-dir", type=str, default=None,
         help="Override path to retain-set data directory.",
     )
+
+    # Coreset selection overrides
+    coreset_group = parser.add_argument_group("coreset selection")
+    coreset_group.add_argument(
+        "--coreset-from", type=str, default=None,
+        help="Selector name for coreset construction (e.g. influence, gradient_norm, el2n).",
+    )
+    coreset_group.add_argument(
+        "--coreset-k", type=int, default=None,
+        help="Number of samples to select for the coreset. Overrides --prune-ratio.",
+    )
+
+    # Validation / early stopping overrides
+    val_group = parser.add_argument_group("validation & early stopping")
+    val_group.add_argument(
+        "--validate-every", type=int, default=0,
+        help="Run validation metrics every N epochs. 0 disables (default).",
+    )
+    val_group.add_argument(
+        "--early-stop-patience", type=int, default=0,
+        help="Stop if monitored metric doesn't improve for N validation rounds. 0 disables.",
+    )
+    val_group.add_argument(
+        "--early-stop-monitor", type=str, default="forget_loss",
+        help="Metric name to monitor for early stopping (default: forget_loss).",
+    )
+    val_group.add_argument(
+        "--early-stop-mode", type=str, default="max",
+        choices=["min", "max"],
+        help="Whether the monitored metric should be minimised or maximised (default: max).",
+    )
+
     parser.set_defaults(func=run_unlearn)
 
 
@@ -110,6 +144,10 @@ def run_unlearn(args: argparse.Namespace) -> None:
     if args.epochs:
         config.epochs = args.epochs
 
+    # CLI overrides for selector
+    if args.coreset_from:
+        config.selector = args.coreset_from
+
     print("=" * 60)
     print("  ERASUS — Machine Unlearning Pipeline")
     print("=" * 60)
@@ -119,6 +157,13 @@ def run_unlearn(args: argparse.Namespace) -> None:
     print(f"  Epochs  : {config.epochs}")
     print(f"  Device  : {config.device}")
     print(f"  Prune   : {config.prune_ratio:.0%}")
+    if args.coreset_k:
+        print(f"  Coreset k: {args.coreset_k}")
+    if args.validate_every > 0:
+        print(f"  Validate: every {args.validate_every} epoch(s)")
+    if args.early_stop_patience > 0:
+        print(f"  Early stop: patience={args.early_stop_patience}, "
+              f"monitor={args.early_stop_monitor} ({args.early_stop_mode})")
     print("=" * 60)
 
     if args.dry_run:
@@ -170,15 +215,45 @@ def run_unlearn(args: argparse.Namespace) -> None:
         retain_loader = _build_dataloader(retain_dir, batch_size=config.batch_size)
 
     if forget_loader is not None:
+        # ---- Build coreset if --coreset-k is specified ----
+        coreset_obj = None
+        if args.coreset_k and config.selector and config.selector != "none":
+            print(f"\n  Building coreset: {config.selector} (k={args.coreset_k}) ...")
+            from erasus.core.coreset import Coreset
+            from erasus.core.registry import selector_registry as sel_reg
+
+            sel_cls = sel_reg.get(config.selector)
+            selector_inst = sel_cls(**config.selector_kwargs)
+            coreset_obj = Coreset.from_selector(
+                selector_inst, unlearner.model, forget_loader, k=args.coreset_k,
+            )
+            print(f"  ✓ Coreset: {len(coreset_obj)}/{len(forget_loader.dataset)} samples")
+
+        # ---- Build validation metrics list ----
+        validation_metrics = None
+        if args.validate_every > 0:
+            from erasus.metrics import MetricSuite
+            validation_metrics = MetricSuite(["accuracy"]).metrics
+
         # ---- Run unlearning ----
         print(f"\n  Running unlearning ({config.epochs} epochs) ...")
         t0 = time.time()
-        result = unlearner.fit(
+        fit_kwargs = dict(
             forget_data=forget_loader,
             retain_data=retain_loader,
             prune_ratio=config.prune_ratio,
             epochs=config.epochs,
+            validate_every=args.validate_every,
+            early_stopping_patience=args.early_stop_patience,
+            early_stopping_monitor=args.early_stop_monitor,
+            early_stopping_mode=args.early_stop_mode,
         )
+        if coreset_obj is not None:
+            fit_kwargs["coreset"] = coreset_obj
+        if validation_metrics is not None:
+            fit_kwargs["validation_metrics"] = validation_metrics
+
+        result = unlearner.fit(**fit_kwargs)
         elapsed = time.time() - t0
         print(f"  ✓ Unlearning complete in {elapsed:.1f}s")
         print(f"    Coreset: {result.coreset_size}/{result.original_forget_size} "

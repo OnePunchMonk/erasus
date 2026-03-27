@@ -322,6 +322,116 @@ class ContinualUnlearner(BaseUnlearner):
         self.model.train()
         return correct / total if total > 0 else 0.0
 
+    def incremental_fit(
+        self,
+        dataset: Any,
+        retain_loader: Optional[DataLoader] = None,
+        previous_result: Optional[ContinualUnlearningResult] = None,
+        prune_ratio: float = 0.1,
+        batch_size: int = 32,
+        **kwargs: Any,
+    ) -> ContinualUnlearningResult:
+        """
+        Incrementally unlearn newly-marked samples from an UnlearningDataset.
+
+        This bridges the ``UnlearningDataset.mark_forget()`` streaming API
+        with the continual unlearning pipeline. Only the *new* forget
+        samples (those not already processed) are unlearned.
+
+        Parameters
+        ----------
+        dataset : UnlearningDataset
+            Dataset with ``forget_indices`` marking samples to forget.
+            Typically updated via ``dataset.mark_forget([...])`` between
+            calls.
+        retain_loader : DataLoader, optional
+            Retain set. If None, one is built from the dataset's retain
+            partition.
+        previous_result : ContinualUnlearningResult, optional
+            Result from a prior ``incremental_fit`` call. Previously
+            processed indices are skipped to avoid redundant work.
+        prune_ratio : float
+            Coreset ratio per deletion batch.
+        batch_size : int
+            Batch size for constructing loaders from the dataset.
+
+        Returns
+        -------
+        ContinualUnlearningResult
+        """
+        from erasus.data.datasets.unlearning import UnlearningDataset
+
+        if not isinstance(dataset, UnlearningDataset):
+            raise TypeError(
+                f"dataset must be an UnlearningDataset, got {type(dataset)}"
+            )
+
+        # Determine which indices are new since last run
+        current_forget = set(dataset.forget_indices)
+        already_processed: set = set()
+        if previous_result is not None:
+            for req in previous_result.deletion_requests:
+                already_processed.update(req.metadata.get("indices", []))
+
+        new_indices = sorted(current_forget - already_processed)
+
+        if not new_indices:
+            # Nothing new to forget — return trivial result
+            return ContinualUnlearningResult(
+                model=self.model,
+                total_elapsed_time=0.0,
+                deletion_requests=(
+                    previous_result.deletion_requests if previous_result else []
+                ),
+                per_request_results=(
+                    previous_result.per_request_results if previous_result else []
+                ),
+                metadata={"skipped": True, "reason": "no_new_indices"},
+            )
+
+        # Build forget loader for the new indices only
+        from torch.utils.data import DataLoader as DL, Subset
+
+        forget_subset = Subset(dataset._dataset, new_indices)
+        forget_loader = DL(forget_subset, batch_size=batch_size, shuffle=True)
+
+        # Build retain loader if not provided
+        if retain_loader is None:
+            retain_indices = dataset.retain_indices
+            if retain_indices:
+                retain_subset = Subset(dataset._dataset, retain_indices)
+                retain_loader = DL(retain_subset, batch_size=batch_size, shuffle=True)
+
+        import time as _time
+
+        request_id = f"incremental_{len(self.deletion_history) + 1}"
+        deletion_request = DeletionRequest(
+            request_id=request_id,
+            forget_loader=forget_loader,
+            forget_set_size=len(new_indices),
+            timestamp=_time.time(),
+            metadata={"indices": new_indices},
+        )
+
+        result = self.process_deletion_requests(
+            deletion_requests=[deletion_request],
+            retain_loader=retain_loader,
+            prune_ratio=prune_ratio,
+            **kwargs,
+        )
+
+        # Merge with previous results
+        if previous_result is not None:
+            result.deletion_requests = (
+                previous_result.deletion_requests + result.deletion_requests
+            )
+            result.per_request_results = (
+                previous_result.per_request_results + result.per_request_results
+            )
+            result.total_elapsed_time += previous_result.total_elapsed_time
+
+        return result
+
     def _run_unlearning(
         self,
         forget_loader: DataLoader,

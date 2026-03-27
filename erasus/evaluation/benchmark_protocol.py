@@ -27,10 +27,12 @@ Example
 
 from __future__ import annotations
 
+import json as _json
 import math
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -214,6 +216,167 @@ class BenchmarkReport:
             )
         return "\n".join(lines)
 
+    # ------------------------------------------------------------------
+    # Persistence
+    # ------------------------------------------------------------------
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialise the report to a JSON-safe dictionary."""
+        return {
+            "protocol": self.protocol,
+            "gold_standard": self.gold_standard,
+            "n_runs": self.n_runs,
+            "confidence_level": self.confidence_level,
+            "elapsed_time": self.elapsed_time,
+            "verdict": self.verdict,
+            "pass_rate": self.pass_rate,
+            "metadata": self.metadata,
+            "metrics": {
+                name: {
+                    "mean": mr.mean,
+                    "std": mr.std,
+                    "values": mr.values,
+                    "gold_values": mr.gold_values,
+                    "pass_threshold": mr.pass_threshold,
+                    "direction": mr.direction,
+                    "passed": mr.passed,
+                    "gap_from_gold": mr.gap_from_gold if mr.gold_values else None,
+                }
+                for name, mr in self.metric_results.items()
+            },
+        }
+
+    def save(self, path: Union[str, Path]) -> None:
+        """Write report to a JSON file."""
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w") as f:
+            _json.dump(self.to_dict(), f, indent=2, default=str)
+
+    @classmethod
+    def load(cls, path: Union[str, Path]) -> "BenchmarkReport":
+        """Load a report from a JSON file."""
+        with open(path) as f:
+            data = _json.load(f)
+
+        metric_results: Dict[str, MetricResult] = {}
+        for name, md in data.get("metrics", {}).items():
+            metric_results[name] = MetricResult(
+                name=name,
+                values=md.get("values", []),
+                gold_values=md.get("gold_values", []),
+                pass_threshold=md.get("pass_threshold", 0.0),
+                direction=md.get("direction", "lower_is_better"),
+            )
+
+        return cls(
+            protocol=data["protocol"],
+            gold_standard=data.get("gold_standard", "retrain"),
+            n_runs=data.get("n_runs", 1),
+            confidence_level=data.get("confidence_level", 0.95),
+            metric_results=metric_results,
+            elapsed_time=data.get("elapsed_time", 0.0),
+            metadata=data.get("metadata", {}),
+        )
+
+    # ------------------------------------------------------------------
+    # Comparison & leaderboard
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def compare(*reports: "BenchmarkReport") -> str:
+        """
+        Side-by-side comparison of multiple benchmark reports.
+
+        Returns a human-readable table.
+        """
+        if not reports:
+            return "(no reports to compare)"
+
+        # Collect all metric names across reports
+        all_metrics = sorted(
+            {name for r in reports for name in r.metric_results}
+        )
+
+        # Header
+        labels = [r.metadata.get("strategy", r.protocol) for r in reports]
+        col_w = max(12, *(len(l) for l in labels))
+        header = f"{'Metric':<30}" + "".join(f"{l:>{col_w}}" for l in labels)
+        sep = "-" * len(header)
+
+        lines = [
+            "=== Benchmark Comparison ===",
+            header,
+            sep,
+        ]
+
+        for metric_name in all_metrics:
+            row = f"{metric_name:<30}"
+            for r in reports:
+                mr = r.metric_results.get(metric_name)
+                if mr is not None:
+                    tag = " *" if mr.passed else ""
+                    row += f"{mr.mean:>{col_w - 2}.4f}{tag:>2}"
+                else:
+                    row += f"{'N/A':>{col_w}}"
+            lines.append(row)
+
+        # Verdict row
+        lines.append(sep)
+        verdict_row = f"{'VERDICT':<30}"
+        for r in reports:
+            verdict_row += f"{r.verdict:>{col_w}}"
+        lines.append(verdict_row)
+
+        return "\n".join(lines)
+
+    @staticmethod
+    def leaderboard(
+        reports: List["BenchmarkReport"],
+        sort_by: str = "pass_rate",
+    ) -> str:
+        """
+        Generate a leaderboard ranking from multiple reports.
+
+        Parameters
+        ----------
+        reports : list[BenchmarkReport]
+        sort_by : str
+            ``"pass_rate"`` (default) or a metric name.
+
+        Returns
+        -------
+        str
+            Formatted leaderboard table.
+        """
+        if not reports:
+            return "(no reports)"
+
+        # Sort
+        def _sort_key(r: "BenchmarkReport") -> float:
+            if sort_by == "pass_rate":
+                return r.pass_rate
+            mr = r.metric_results.get(sort_by)
+            if mr is None:
+                return -999.0
+            return mr.mean
+
+        ranked = sorted(reports, key=_sort_key, reverse=True)
+
+        lines = [
+            f"=== Leaderboard (sorted by {sort_by}) ===",
+            f"{'Rank':<6}{'Strategy':<25}{'Protocol':<12}{'Pass Rate':>10}{'Verdict':>10}",
+            "-" * 65,
+        ]
+        for i, r in enumerate(ranked, 1):
+            label = r.metadata.get("strategy", "unknown")
+            lines.append(
+                f"{i:<6}{label:<25}{r.protocol:<12}"
+                f"{r.pass_rate:>9.0%} {r.verdict:>10}"
+            )
+
+        return "\n".join(lines)
+
 
 # ======================================================================
 # Main benchmark class
@@ -247,6 +410,7 @@ class UnlearningBenchmark:
         n_runs: int = 1,
         confidence_level: float = 0.95,
         custom_metrics: Optional[List[MetricSpec]] = None,
+        include_privacy: bool = False,
     ) -> None:
         if protocol not in PROTOCOLS:
             available = ", ".join(sorted(PROTOCOLS.keys()))
@@ -256,11 +420,29 @@ class UnlearningBenchmark:
         self.gold_standard = gold_standard
         self.n_runs = n_runs
         self.confidence_level = confidence_level
+        self.include_privacy = include_privacy
 
         proto_def = PROTOCOLS[protocol]
         self._metrics: List[MetricSpec] = list(proto_def["metrics"])
         if custom_metrics:
             self._metrics.extend(custom_metrics)
+
+        # Add privacy verification metrics when requested
+        if include_privacy:
+            self._metrics.extend([
+                MetricSpec(
+                    "epsilon_budget",
+                    "_compute_epsilon_budget",
+                    10.0,
+                    "lower_is_better",
+                ),
+                MetricSpec(
+                    "certified_removal",
+                    "_compute_certified_removal",
+                    0.5,
+                    "higher_is_better",
+                ),
+            ])
 
         self._runner = _BenchmarkRunner()
 
@@ -581,3 +763,96 @@ class _BenchmarkRunner:
     ) -> float:
         """Compute hazard score: accuracy on hazardous forget data (lower = better)."""
         return self._compute_forget_quality(model, forget_data, retain_data, **kwargs)
+
+    # ------------------------------------------------------------------
+    # Privacy metrics (enabled via include_privacy=True)
+    # ------------------------------------------------------------------
+
+    def _compute_epsilon_budget(
+        self,
+        model: nn.Module,
+        forget_data: DataLoader,
+        retain_data: DataLoader,
+        **kwargs: Any,
+    ) -> float:
+        """
+        Estimate epsilon privacy budget using influence-based bounds.
+
+        Uses the certification module's theoretical bounds to estimate the
+        parameter shift caused by unlearning, then derives an approximate
+        epsilon value.
+        """
+        try:
+            from erasus.certification.bounds import TheoreticalBounds
+
+            result = TheoreticalBounds.influence_bound(
+                model=model,
+                forget_loader=forget_data,
+                retain_loader=retain_data,
+            )
+            # Convert parameter shift bound to approximate epsilon
+            shift = result.get("parameter_shift_bound", 1.0)
+            n_forget = len(forget_data.dataset)
+            # epsilon ~ shift * sqrt(n_forget) (simplified bound)
+            epsilon = shift * (n_forget ** 0.5)
+            return float(epsilon)
+        except Exception:
+            # Fallback: use gradient norm as proxy
+            device = next(model.parameters()).device
+            model.eval()
+            total_norm = 0.0
+            n_batches = 0
+            for batch in forget_data:
+                inputs = batch[0].to(device)
+                labels = batch[1].to(device) if len(batch) > 1 else None
+                outputs = model(inputs)
+                logits = outputs.logits if hasattr(outputs, "logits") else outputs
+                if labels is not None:
+                    loss = torch.nn.functional.cross_entropy(logits, labels)
+                    loss.backward()
+                    grad_norm = sum(
+                        p.grad.norm().item() ** 2
+                        for p in model.parameters()
+                        if p.grad is not None
+                    ) ** 0.5
+                    total_norm += grad_norm
+                    n_batches += 1
+                    model.zero_grad()
+            return total_norm / max(n_batches, 1)
+
+    def _compute_certified_removal(
+        self,
+        model: nn.Module,
+        forget_data: DataLoader,
+        retain_data: DataLoader,
+        **kwargs: Any,
+    ) -> float:
+        """
+        Compute certified removal score using PAC-based utility bounds.
+
+        Returns a score in [0, 1] where higher means more confidence
+        that unlearning was effective.
+        """
+        try:
+            from erasus.certification.bounds import TheoreticalBounds
+
+            n_forget = len(forget_data.dataset)
+            n_retain = len(retain_data.dataset) if retain_data is not None else 0
+            n_total = n_forget + n_retain
+
+            result = TheoreticalBounds.pac_utility_bound(
+                n_total=n_total,
+                n_forget=n_forget,
+                n_retain=n_retain,
+                model=model,
+            )
+            # Score: 1 - utility_drop_bound (high bound = less certified)
+            bound = result.get("pac_utility_drop_bound", 0.5)
+            return float(max(0.0, min(1.0, 1.0 - bound)))
+        except Exception:
+            # Fallback: use forget-set accuracy as inverse proxy
+            forget_acc = self._compute_forget_quality(
+                model, forget_data, retain_data, **kwargs
+            )
+            # Low accuracy on forget set = good removal
+            return float(1.0 - forget_acc)

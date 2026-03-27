@@ -25,6 +25,7 @@ from erasus.unlearners.multimodal_unlearner import MultimodalUnlearner
 from erasus.core.coreset import Coreset
 from erasus.core.unlearning_module import UnlearningModule
 from erasus.core.unlearning_trainer import UnlearningTrainer
+from erasus.core.strategy_pipeline import StrategyPipeline
 
 __all__ = [
     "__version__",
@@ -33,4 +34,5 @@ __all__ = [
     "Coreset",
     "UnlearningModule",
     "UnlearningTrainer",
+    "StrategyPipeline",
 ]

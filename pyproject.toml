@@ -72,3 +72,6 @@ target-version = "py39"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+markers = [
+    "real_models: integration tests that download/use real HuggingFace models (deselect with: -m 'not real_models')",
+]

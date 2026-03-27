@@ -13,6 +13,7 @@ from erasus.core.config import ErasusConfig
 from erasus.core.coreset import Coreset, CoresetMetadata
 from erasus.core.unlearning_module import UnlearningModule
 from erasus.core.unlearning_trainer import UnlearningTrainer, TrainerResult
+from erasus.core.strategy_pipeline import StrategyPipeline
 from erasus.core.exceptions import (
     ErasusError,
     ModelNotFoundError,
@@ -34,6 +35,7 @@ __all__ = [
     "UnlearningModule",
     "UnlearningTrainer",
     "TrainerResult",
+    "StrategyPipeline",
     "ErasusError",
     "ModelNotFoundError",
     "StrategyError",

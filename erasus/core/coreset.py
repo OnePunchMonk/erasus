@@ -262,6 +262,155 @@ class Coreset:
         )
 
     # ------------------------------------------------------------------
+    # Quality diagnostics
+    # ------------------------------------------------------------------
+
+    def coverage(self, model: nn.Module, batch_size: int = 32) -> float:
+        """
+        Estimate feature-space coverage of the coreset relative to the
+        full dataset using average pairwise cosine similarity.
+
+        Returns a value in [0, 1] where higher means the coreset features
+        span more of the full dataset's representation space.
+        """
+        import torch
+
+        model.eval()
+        device = next(model.parameters()).device
+
+        def _get_features(indices: List[int]) -> torch.Tensor:
+            subset = Subset(self._dataset, indices)
+            loader = DataLoader(subset, batch_size=batch_size, shuffle=False)
+            feats = []
+            with torch.no_grad():
+                for batch in loader:
+                    x = batch[0] if isinstance(batch, (list, tuple)) else batch
+                    x = x.to(device)
+                    out = model(x)
+                    if out.dim() > 2:
+                        out = out.view(out.size(0), -1)
+                    feats.append(out)
+            return torch.cat(feats, dim=0)
+
+        coreset_feats = _get_features(self._indices)
+        # Sample same-sized random subset from full dataset for comparison
+        all_indices = list(range(len(self._dataset)))
+        n_sample = min(len(all_indices), max(len(self._indices) * 2, 200))
+        import random
+        sample_indices = random.sample(all_indices, n_sample)
+        full_feats = _get_features(sample_indices)
+
+        # Normalize and compute coverage as mean max-cosine-similarity
+        coreset_norm = torch.nn.functional.normalize(coreset_feats, dim=1)
+        full_norm = torch.nn.functional.normalize(full_feats, dim=1)
+        sim_matrix = full_norm @ coreset_norm.T  # (n_full, n_coreset)
+        max_sim = sim_matrix.max(dim=1).values  # each full sample's best match
+        return float(max_sim.mean().item())
+
+    def redundancy(self) -> float:
+        """
+        Compute redundancy score based on index overlap density.
+
+        Returns a value in [0, 1]. 0 means all unique indices, higher
+        means the coreset contains clusters of nearby indices (potential
+        duplicates or highly similar samples).
+
+        Uses score variance as a proxy when scores are available, otherwise
+        uses index spacing regularity.
+        """
+        if len(self._indices) <= 1:
+            return 0.0
+
+        if self._scores is not None and len(self._scores) > 1:
+            scores = np.array(self._scores)
+            # Low variance in scores = high redundancy (all equally important)
+            score_range = scores.max() - scores.min()
+            if score_range < 1e-12:
+                return 1.0
+            cv = float(scores.std() / (abs(scores.mean()) + 1e-12))
+            # Normalise: low CV -> high redundancy
+            return float(max(0.0, 1.0 - min(cv, 1.0)))
+
+        # Fallback: how tightly packed are the indices?
+        sorted_idx = sorted(self._indices)
+        gaps = [sorted_idx[i + 1] - sorted_idx[i] for i in range(len(sorted_idx) - 1)]
+        if not gaps:
+            return 0.0
+        mean_gap = sum(gaps) / len(gaps)
+        expected_gap = self.metadata.original_size / max(len(self._indices), 1)
+        if expected_gap < 1e-12:
+            return 0.0
+        return float(max(0.0, 1.0 - min(mean_gap / expected_gap, 1.0)))
+
+    def overlap_with(self, other: "Coreset") -> float:
+        """
+        Jaccard similarity between this coreset and another.
+
+        Returns a value in [0, 1].
+        """
+        s1 = set(self._indices)
+        s2 = set(other._indices)
+        union_size = len(s1 | s2)
+        if union_size == 0:
+            return 0.0
+        return len(s1 & s2) / union_size
+
+    def diagnostics(self, model: Optional[nn.Module] = None) -> Dict[str, Any]:
+        """
+        Return a dictionary of quality diagnostics.
+
+        Parameters
+        ----------
+        model : nn.Module, optional
+            If provided, feature-space coverage is computed.
+
+        Returns
+        -------
+        dict
+            Keys: size, original_size, compression_ratio, redundancy,
+            and optionally coverage.
+        """
+        diag: Dict[str, Any] = {
+            "size": len(self),
+            "original_size": self.metadata.original_size,
+            "compression_ratio": self.compression_ratio,
+            "redundancy": self.redundancy(),
+            "selector": self.metadata.selector_name,
+        }
+        if self._scores is not None:
+            scores_arr = np.array(self._scores)
+            diag["score_mean"] = float(scores_arr.mean())
+            diag["score_std"] = float(scores_arr.std())
+            diag["score_min"] = float(scores_arr.min())
+            diag["score_max"] = float(scores_arr.max())
+        if model is not None:
+            diag["coverage"] = self.coverage(model)
+        return diag
+
+    @staticmethod
+    def compare(*coresets: "Coreset", model: Optional[nn.Module] = None) -> List[Dict[str, Any]]:
+        """
+        Side-by-side comparison of multiple coresets.
+
+        Returns a list of diagnostic dicts, one per coreset, plus
+        pairwise overlap scores.
+        """
+        results = []
+        for c in coresets:
+            d = c.diagnostics(model=model)
+            results.append(d)
+
+        # Add pairwise overlaps
+        for i, c in enumerate(coresets):
+            overlaps = {}
+            for j, other in enumerate(coresets):
+                if i != j:
+                    overlaps[f"overlap_with_{j}"] = c.overlap_with(other)
+            results[i]["overlaps"] = overlaps
+
+        return results
+
+    # ------------------------------------------------------------------
     # Conversion
     # ------------------------------------------------------------------
 

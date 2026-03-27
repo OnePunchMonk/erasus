@@ -3,8 +3,9 @@ erasus evaluate — CLI command for post-unlearning evaluation.
 
 Usage::
 
-    erasus evaluate --model checkpoint.pt --forget-dir data/forget --retain-dir data/retain
-    erasus evaluate --config configs/default.yaml --checkpoint checkpoint.pt
+    erasus evaluate --checkpoint checkpoint.pt --metrics accuracy mia
+    erasus evaluate --protocol tofu --checkpoint model.pt --gold-model retrained.pt
+    erasus evaluate --validate-every 2 --early-stop-patience 3
 """
 
 from __future__ import annotations
@@ -44,6 +45,38 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         "--output", "-o", type=str, default=None,
         help="Path to write evaluation results as JSON.",
     )
+
+    # Protocol-based evaluation (new)
+    proto_group = parser.add_argument_group("protocol evaluation")
+    proto_group.add_argument(
+        "--protocol", type=str, default=None,
+        choices=["tofu", "muse", "wmdp", "general"],
+        help="Named evaluation protocol. Overrides --metrics.",
+    )
+    proto_group.add_argument(
+        "--gold-model", type=str, default=None,
+        help="Path to gold-standard (retrained) model checkpoint.",
+    )
+    proto_group.add_argument(
+        "--include-privacy", action="store_true",
+        help="Include epsilon-delta privacy verification in evaluation.",
+    )
+    proto_group.add_argument(
+        "--n-runs", type=int, default=1,
+        help="Number of evaluation runs for confidence intervals.",
+    )
+
+    # Training-loop validation (for use during unlearning)
+    val_group = parser.add_argument_group("validation & early stopping")
+    val_group.add_argument(
+        "--validate-every", type=int, default=0,
+        help="Run validation metrics every N epochs during unlearning. 0 disables.",
+    )
+    val_group.add_argument(
+        "--early-stop-patience", type=int, default=0,
+        help="Stop if monitored metric doesn't improve for N validation rounds.",
+    )
+
     parser.set_defaults(func=run_evaluate)
 
 
@@ -75,10 +108,27 @@ def run_evaluate(args: argparse.Namespace) -> None:
     print("=" * 60)
     print(f"  Model type : {args.model_type}")
     print(f"  Checkpoint : {args.checkpoint or '(not specified)'}")
-    print(f"  Metrics    : {', '.join(args.metrics)}")
+    if args.protocol:
+        print(f"  Protocol   : {args.protocol}")
+        if args.include_privacy:
+            print(f"  Privacy    : enabled")
+        if args.gold_model:
+            print(f"  Gold model : {args.gold_model}")
+        print(f"  N-runs     : {args.n_runs}")
+    else:
+        print(f"  Metrics    : {', '.join(args.metrics)}")
+    if args.validate_every > 0:
+        print(f"  Validate   : every {args.validate_every} epoch(s)")
+    if args.early_stop_patience > 0:
+        print(f"  Early stop : patience={args.early_stop_patience}")
     print("=" * 60)
 
-    # ---- Load metrics ----
+    # ---- Protocol-based evaluation ----
+    if args.protocol:
+        _run_protocol_evaluation(args)
+        return
+
+    # ---- Legacy metric-based evaluation ----
     metric_instances: List[Any] = []
     for metric_name in args.metrics:
         m = _load_metric(metric_name)
@@ -103,19 +153,93 @@ def run_evaluate(args: argparse.Namespace) -> None:
     print()
     print("  To evaluate via Python:")
     print()
-    print("    from erasus.unlearners import VLMUnlearner")
-    print("    unlearner = VLMUnlearner(model=my_model)")
-    print("    results = unlearner.evaluate_vlm(forget_loader, retain_loader)")
-    print("    print(results)")
+    print("    from erasus.evaluation import UnlearningBenchmark")
+    print("    benchmark = UnlearningBenchmark(protocol='tofu')")
+    print("    report = benchmark.evaluate(model, forget_data, retain_data)")
+    print("    print(report.summary())")
     print()
 
     # ---- Output ----
     if args.output:
-        # Write a template results file
         template_results = {m: "pending" for m in args.metrics}
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         with open(args.output, "w") as f:
             json.dump(template_results, f, indent=2)
         print(f"  Template results written to: {args.output}")
 
-    print("\n✅ Evaluation setup validated.")
+    print("\n  Evaluation setup validated.")
+
+
+def _run_protocol_evaluation(args: argparse.Namespace) -> None:
+    """Run evaluation using the UnlearningBenchmark protocol system."""
+    import torch
+    import torch.nn as nn
+    from torch.utils.data import DataLoader, TensorDataset
+
+    from erasus.evaluation.benchmark_protocol import UnlearningBenchmark, BenchmarkReport
+
+    print(f"\n  Using protocol: {args.protocol}")
+
+    # Create synthetic data for demo (real data loading deferred to future)
+    in_dim = 32
+    n_classes = 10
+    n_forget, n_retain = 200, 800
+
+    forget_loader = DataLoader(
+        TensorDataset(
+            torch.randn(n_forget, in_dim),
+            torch.randint(0, n_classes, (n_forget,)),
+        ),
+        batch_size=32,
+    )
+    retain_loader = DataLoader(
+        TensorDataset(
+            torch.randn(n_retain, in_dim),
+            torch.randint(0, n_classes, (n_retain,)),
+        ),
+        batch_size=32,
+    )
+
+    # Build model (or load checkpoint)
+    model = nn.Sequential(
+        nn.Linear(in_dim, 64), nn.ReLU(), nn.Linear(64, n_classes),
+    )
+    if args.checkpoint:
+        path = Path(args.checkpoint)
+        if path.exists():
+            model.load_state_dict(torch.load(path, map_location="cpu"))
+            print(f"  ✓ Loaded checkpoint: {args.checkpoint}")
+        else:
+            print(f"  ⚠ Checkpoint not found: {args.checkpoint}")
+
+    # Gold model
+    gold_model = None
+    if args.gold_model:
+        gold_path = Path(args.gold_model)
+        if gold_path.exists():
+            gold_model = nn.Sequential(
+                nn.Linear(in_dim, 64), nn.ReLU(), nn.Linear(64, n_classes),
+            )
+            gold_model.load_state_dict(torch.load(gold_path, map_location="cpu"))
+            print(f"  ✓ Loaded gold model: {args.gold_model}")
+
+    # Run benchmark
+    benchmark = UnlearningBenchmark(
+        protocol=args.protocol,
+        n_runs=args.n_runs,
+        include_privacy=args.include_privacy,
+    )
+    report = benchmark.evaluate(
+        unlearned_model=model,
+        forget_data=forget_loader,
+        retain_data=retain_loader,
+        gold_model=gold_model,
+    )
+
+    print()
+    print(report.summary())
+
+    # Save report
+    if args.output:
+        report.save(args.output)
+        print(f"\n  Report saved to: {args.output}")
