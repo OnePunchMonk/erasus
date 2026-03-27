@@ -12,7 +12,19 @@ from typing import Any, Dict, List, Optional
 
 
 class Callback:
-    """Base callback class."""
+    """
+    Base callback class.
+
+    Provides hooks at every meaningful point in the unlearning lifecycle.
+    Subclass and override the hooks you need.
+    """
+
+    # --- Training lifecycle ---
+    def on_train_start(self, **kwargs: Any) -> None:
+        pass
+
+    def on_train_end(self, **kwargs: Any) -> None:
+        pass
 
     def on_epoch_start(self, epoch: int, **kwargs: Any) -> None:
         pass
@@ -26,10 +38,27 @@ class Callback:
     def on_batch_end(self, batch_idx: int, loss: float, **kwargs: Any) -> None:
         pass
 
-    def on_train_start(self, **kwargs: Any) -> None:
+    # --- Unlearning-specific hooks ---
+    def on_before_unlearn_step(self, model: Any, batch: Any, **kwargs: Any) -> None:
+        """Called before each unlearning gradient step — inject clipping, noise, etc."""
         pass
 
-    def on_train_end(self, **kwargs: Any) -> None:
+    def on_after_unlearn_step(self, model: Any, batch: Any, loss: float, **kwargs: Any) -> None:
+        """Called after each unlearning gradient step."""
+        pass
+
+    def on_coreset_selected(self, indices: Any, metadata: Dict[str, Any], **kwargs: Any) -> None:
+        """Called after coreset selection, before unlearning begins."""
+        pass
+
+    # --- Checkpoint hooks ---
+    def on_checkpoint_save(self, path: str, metadata: Dict[str, Any], **kwargs: Any) -> None:
+        """Called when a checkpoint is saved — embed custom metadata."""
+        pass
+
+    # --- Error handling ---
+    def on_exception(self, exception: BaseException, **kwargs: Any) -> None:
+        """Called when an exception occurs during unlearning."""
         pass
 
     def should_stop(self) -> bool:
@@ -68,6 +97,26 @@ class CallbackList:
     def on_train_end(self, **kwargs: Any) -> None:
         for cb in self.callbacks:
             cb.on_train_end(**kwargs)
+
+    def on_before_unlearn_step(self, model: Any, batch: Any, **kwargs: Any) -> None:
+        for cb in self.callbacks:
+            cb.on_before_unlearn_step(model, batch, **kwargs)
+
+    def on_after_unlearn_step(self, model: Any, batch: Any, loss: float, **kwargs: Any) -> None:
+        for cb in self.callbacks:
+            cb.on_after_unlearn_step(model, batch, loss, **kwargs)
+
+    def on_coreset_selected(self, indices: Any, metadata: Dict[str, Any], **kwargs: Any) -> None:
+        for cb in self.callbacks:
+            cb.on_coreset_selected(indices, metadata, **kwargs)
+
+    def on_checkpoint_save(self, path: str, metadata: Dict[str, Any], **kwargs: Any) -> None:
+        for cb in self.callbacks:
+            cb.on_checkpoint_save(path, metadata, **kwargs)
+
+    def on_exception(self, exception: BaseException, **kwargs: Any) -> None:
+        for cb in self.callbacks:
+            cb.on_exception(exception, **kwargs)
 
     def should_stop(self) -> bool:
         return any(cb.should_stop() for cb in self.callbacks)

@@ -119,7 +119,11 @@ class FisherForgettingStrategy(BaseStrategy):
     def _compute_fisher_diag(
         self, model: nn.Module, loader: DataLoader, device
     ) -> Dict[str, torch.Tensor]:
-        """Compute diagonal of Fisher Information Matrix using empirical gradients."""
+        """Compute diagonal of Fisher Information Matrix using empirical gradients.
+
+        Uses in-place operations (``add_``, ``div_``) to minimise temporary
+        tensor allocations during gradient accumulation.
+        """
         fisher = {}
         for n, p in model.named_parameters():
             if p.requires_grad:
@@ -129,26 +133,27 @@ class FisherForgettingStrategy(BaseStrategy):
         for batch in loader:
             inputs = batch[0].to(device)
             labels = batch[1].to(device) if len(batch) > 1 else None
-            
+
             model.zero_grad()
             outputs = model(inputs)
             logits = outputs.logits if hasattr(outputs, "logits") else outputs
-            
+
             if labels is not None:
                 loss = torch.nn.functional.cross_entropy(logits, labels)
             else:
-                loss = logits.sum() # Dummy
-            
+                loss = logits.sum()
+
             loss.backward()
-            
+
             for n, p in model.named_parameters():
                 if p.grad is not None and n in fisher:
-                    fisher[n] += p.grad.detach() ** 2
-        
-        # Normalize
-        n_batches = len(loader)
+                    # In-place: fisher[n] += grad ** 2 without allocating a temp
+                    fisher[n].addcmul_(p.grad.detach(), p.grad.detach(), value=1.0)
+
+        # Normalize in-place
+        n_batches = max(len(loader), 1)
         for n in fisher:
-            fisher[n] /= n_batches
-            
+            fisher[n].div_(n_batches)
+
         return fisher
 
