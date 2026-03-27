@@ -47,18 +47,23 @@ class ErasusUnlearner(BaseUnlearner):
     ) -> None:
         from erasus.core.base_strategy import BaseStrategy
         from erasus.core.base_selector import BaseSelector
+        from erasus.core.strategy_pipeline import StrategyPipeline
 
-        # Resolve strategy: accept string name or instance
+        # Resolve strategy: accept string name, instance, or pipeline
         if isinstance(strategy, str):
             strategy_cls = strategy_registry.get(strategy)
             strategy_instance = strategy_cls(**(strategy_kwargs or {}))
             self.strategy_name = strategy
+        elif isinstance(strategy, StrategyPipeline):
+            strategy_instance = strategy
+            self.strategy_name = repr(strategy)
         elif isinstance(strategy, BaseStrategy):
             strategy_instance = strategy
             self.strategy_name = strategy.__class__.__name__
         else:
             raise TypeError(
-                f"strategy must be a string or BaseStrategy instance, got {type(strategy)}"
+                f"strategy must be a string, BaseStrategy instance, or "
+                f"StrategyPipeline, got {type(strategy)}"
             )
 
         # Resolve selector: accept string name, instance, or None
