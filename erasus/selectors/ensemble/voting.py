@@ -7,14 +7,17 @@ the most universally "important" or "difficult" examples.
 
 from __future__ import annotations
 
-from typing import Any, List, Dict
+import logging
+from collections import Counter
+from typing import Any, Dict, List
 
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from collections import Counter
 
 from erasus.core.base_selector import BaseSelector
 from erasus.core.registry import selector_registry, Registry
+
+logger = logging.getLogger(__name__)
 
 
 @selector_registry.register("voting")
@@ -53,7 +56,7 @@ class VotingSelector(BaseSelector):
                 all_votes.extend(indices)
                 
             except Exception as e:
-                print(f"Warning: VotingSelector failed to run '{name}': {e}")
+                logger.warning("VotingSelector failed to run '%s': %s", name, e)
                 continue
                 
         if not all_votes:
