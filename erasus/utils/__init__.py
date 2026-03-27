@@ -27,6 +27,7 @@ from erasus.utils.distributed import (
     broadcast_object,
 )
 
+from erasus.utils.batch import unpack_batch
 from erasus.utils.profiling import UnlearningProfiler, profile_section, profile_model_memory
 from erasus.utils.reproducibility import make_reproducible, ExperimentSnapshot
 
@@ -58,6 +59,8 @@ __all__ = [
     "UnlearningProfiler",
     "profile_section",
     "profile_model_memory",
+    # batch
+    "unpack_batch",
     # reproducibility
     "make_reproducible",
     "ExperimentSnapshot",

@@ -7,6 +7,7 @@ ensuring diversity and representativeness.
 
 from __future__ import annotations
 
+import logging
 from typing import Any, List
 
 import numpy as np
@@ -16,6 +17,8 @@ from torch.utils.data import DataLoader
 
 from erasus.core.base_selector import BaseSelector
 from erasus.core.registry import selector_registry
+
+logger = logging.getLogger(__name__)
 
 
 @selector_registry.register("submodular")
@@ -45,7 +48,7 @@ class SubmodularSelector(BaseSelector):
         # Similarity matrix [N, N] - Expensive for large N!
         # For N > 5000, consider random subsampling or batching.
         if n_samples > 2000:
-             print("Warning: Submodular selection is O(N^2). Subsampling to 2000 for efficiency.")
+             logger.warning("Submodular selection is O(N^2). Subsampling to 2000 for efficiency.")
              indices = np.random.choice(n_samples, 2000, replace=False)
              embeddings = embeddings[indices]
              mapping = {i: old for i, old in enumerate(indices)}

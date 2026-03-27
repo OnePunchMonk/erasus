@@ -7,13 +7,20 @@ Requires a pre-trained Valuation Network that accepts (input, label) pairs and o
 Reference: "Data Valuation using Reinforcement Learning" (Yoon et al., ICML 2020)
 """
 from __future__ import annotations
+
+import logging
 from typing import Any, List
+
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-import numpy as np
+
 from erasus.core.base_selector import BaseSelector
+from erasus.core.exceptions import SelectorError
 from erasus.core.registry import selector_registry
+
+logger = logging.getLogger(__name__)
 
 @selector_registry.register("valuation_network")
 class ValuationNetworkSelector(BaseSelector):
@@ -23,9 +30,11 @@ class ValuationNetworkSelector(BaseSelector):
     
     def select(self, model: nn.Module, data_loader: DataLoader, k: int, val_net: nn.Module = None, **kwargs) -> List[int]:
         if val_net is None:
-             print("Warning: ValuationNetworkSelector requires 'val_net' (an auxiliary scoring model). Returning Random fallback.")
-             from erasus.selectors.random_selector import RandomSelector
-             return RandomSelector().select(model, data_loader, k)
+            raise SelectorError(
+                "ValuationNetworkSelector requires a 'val_net' argument — a trained "
+                "auxiliary model that scores (input, label) pairs. Pass it as: "
+                "selector.select(model, loader, k, val_net=my_val_net)"
+            )
         
         device = next(val_net.parameters()).device
         val_net.eval()

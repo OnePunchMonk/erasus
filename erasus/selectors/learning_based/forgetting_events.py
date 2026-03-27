@@ -9,14 +9,18 @@ Reference: Toneva et al., "An Empirical Study of Example Forgetting during Deep 
 
 from __future__ import annotations
 
-from typing import Any, List, Dict
+import logging
+from typing import Any, Dict, List
 
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from erasus.core.base_selector import BaseSelector
+from erasus.core.exceptions import SelectorError
 from erasus.core.registry import selector_registry
+
+logger = logging.getLogger(__name__)
 
 
 @selector_registry.register("forgetting_events")
@@ -39,13 +43,13 @@ class ForgettingEventsSelector(BaseSelector):
     ) -> List[int]:
         
         if forgetting_stats is None:
-            # We cannot compute this from a static checkpoint.
-            # We implemented a stub warning previously.
-            # Now explicitly failing or mocking.
-            print("Warning: ForgettingEventsSelector requires 'forgetting_stats' dictionary (idx -> count). Returning Random.")
-            import random
-            n = len(data_loader.dataset)
-            return random.sample(range(n), min(k, n))
+            raise SelectorError(
+                "ForgettingEventsSelector requires a 'forgetting_stats' dictionary "
+                "mapping sample index -> forgetting event count. This cannot be "
+                "computed from a static checkpoint — it must be collected during "
+                "training. Pass it as: selector.select(model, loader, k, "
+                "forgetting_stats={0: 3, 1: 0, ...})"
+            )
 
         # Sort by count descending
         sorted_indices = sorted(forgetting_stats.keys(), key=lambda i: forgetting_stats[i], reverse=True)
