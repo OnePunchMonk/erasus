@@ -56,6 +56,11 @@ class GradientAscentStrategy(BaseStrategy):
         )
         device = next(model.parameters()).device
 
+        # AMP support (passed from BaseUnlearner.fit or directly)
+        amp_enabled = kwargs.get("_amp_enabled", False)
+        amp_dtype = kwargs.get("_amp_dtype", torch.float16)
+        scaler = torch.amp.GradScaler(enabled=amp_enabled and device != "cpu")
+
         forget_losses: List[float] = []
         retain_losses: List[float] = []
 
@@ -65,14 +70,17 @@ class GradientAscentStrategy(BaseStrategy):
 
             for batch in forget_loader:
                 inputs, labels = batch[0].to(device), batch[1].to(device)
-                outputs = model(inputs)
-                logits = outputs.logits if hasattr(outputs, "logits") else outputs
-                loss = F.cross_entropy(logits, labels)
+
+                with torch.amp.autocast(device_type=device if isinstance(device, str) else device.type, dtype=amp_dtype, enabled=amp_enabled):
+                    outputs = model(inputs)
+                    logits = outputs.logits if hasattr(outputs, "logits") else outputs
+                    loss = F.cross_entropy(logits, labels)
 
                 # MAXIMIZE loss → gradient ascent
                 optimizer.zero_grad()
-                (-loss).backward()
-                optimizer.step()
+                scaler.scale(-loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
 
                 epoch_forget_loss += loss.item()
                 n_forget += 1
@@ -85,13 +93,16 @@ class GradientAscentStrategy(BaseStrategy):
                 n_retain = 0
                 for batch in retain_loader:
                     inputs, labels = batch[0].to(device), batch[1].to(device)
-                    outputs = model(inputs)
-                    logits = outputs.logits if hasattr(outputs, "logits") else outputs
-                    loss = F.cross_entropy(logits, labels)
+
+                    with torch.amp.autocast(device_type=device if isinstance(device, str) else device.type, dtype=amp_dtype, enabled=amp_enabled):
+                        outputs = model(inputs)
+                        logits = outputs.logits if hasattr(outputs, "logits") else outputs
+                        loss = F.cross_entropy(logits, labels)
 
                     optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
+                    scaler.scale(loss).backward()
+                    scaler.step(optimizer)
+                    scaler.update()
 
                     epoch_retain_loss += loss.item()
                     n_retain += 1

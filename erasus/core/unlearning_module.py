@@ -29,12 +29,16 @@ Example
 from __future__ import annotations
 
 import copy
+import inspect
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+
+logger = logging.getLogger(__name__)
 
 
 class UnlearningModule(ABC):
@@ -54,6 +58,79 @@ class UnlearningModule(ABC):
     def __init__(self, model: nn.Module) -> None:
         self.model = model
         self._device: torch.device = torch.device("cpu")
+        self._logged_metrics: Dict[str, float] = {}
+        self._hparams: Dict[str, Any] = {}
+
+    # ------------------------------------------------------------------
+    # Logging (Lightning-inspired self.log())
+    # ------------------------------------------------------------------
+
+    def log(self, name: str, value: Any, prog_bar: bool = False) -> None:
+        """
+        Log a metric value. Called from ``forget_step`` / ``retain_step``.
+
+        Values are collected per step and aggregated per epoch by the
+        trainer. If no trainer is attached, values are stored locally
+        and accessible via ``logged_metrics``.
+
+        Parameters
+        ----------
+        name : str
+            Metric name (e.g. ``"forget_loss"``).
+        value : Any
+            Scalar value — ``float``, ``int``, or 0-dim ``torch.Tensor``.
+        prog_bar : bool
+            Hint for the trainer to display in a progress bar.
+        """
+        if isinstance(value, torch.Tensor):
+            value = value.detach().item()
+        self._logged_metrics[name] = float(value)
+
+    @property
+    def logged_metrics(self) -> Dict[str, float]:
+        """Return the most recently logged metrics."""
+        return dict(self._logged_metrics)
+
+    def _reset_logged_metrics(self) -> None:
+        """Clear logged metrics (called by the trainer between epochs)."""
+        self._logged_metrics.clear()
+
+    # ------------------------------------------------------------------
+    # Hyperparameter saving (Lightning-inspired)
+    # ------------------------------------------------------------------
+
+    def save_hyperparameters(self, ignore: Optional[List[str]] = None) -> None:
+        """
+        Store ``__init__`` arguments as ``self.hparams``.
+
+        Call ``self.save_hyperparameters()`` in your ``__init__`` and
+        all constructor args are captured automatically.  These are
+        embedded in checkpoints so results are self-describing.
+
+        Parameters
+        ----------
+        ignore : list[str], optional
+            Parameter names to exclude (e.g. ``["model"]``).
+        """
+        frame = inspect.currentframe()
+        if frame is None or frame.f_back is None:
+            return
+        caller_locals = frame.f_back.f_locals
+        ignore_set = set(ignore or []) | {"self", "__class__"}
+        sig = inspect.signature(self.__class__.__init__)
+        for name in sig.parameters:
+            if name in ignore_set:
+                continue
+            if name in caller_locals:
+                val = caller_locals[name]
+                if isinstance(val, (nn.Module, torch.Tensor)):
+                    continue
+                self._hparams[name] = val
+
+    @property
+    def hparams(self) -> Dict[str, Any]:
+        """Return saved hyperparameters."""
+        return dict(self._hparams)
 
     @abstractmethod
     def forget_step(
