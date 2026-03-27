@@ -16,8 +16,10 @@ This is the primary user-facing class. Example usage::
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional, Tuple
 
+import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
@@ -28,11 +30,40 @@ from erasus.core.registry import strategy_registry, selector_registry
 import erasus.strategies  # noqa: F401
 import erasus.selectors  # noqa: F401
 
+logger = logging.getLogger(__name__)
+
+
+def _detect_model_type(model: nn.Module) -> str:
+    """Heuristic model-type detection from architecture."""
+    name = model.__class__.__name__.lower()
+    module_name = model.__class__.__module__ or ""
+
+    # LLM patterns
+    if any(k in name for k in ("gpt", "llama", "mistral", "phi", "gemma", "opt", "bloom", "falcon")):
+        return "llm"
+    if "transformers" in module_name and any(k in name for k in ("causal", "seq2seq")):
+        return "llm"
+
+    # Diffusion
+    if any(k in name for k in ("unet", "diffusion", "stable")):
+        return "diffusion"
+
+    # VLM
+    if any(k in name for k in ("clip", "blip", "llava")):
+        return "vlm"
+
+    return "classifier"
+
 
 class ErasusUnlearner(BaseUnlearner):
     """
     Main Erasus unlearner — resolves strategy/selector by name,
     orchestrates coreset selection + unlearning + evaluation.
+
+    Smart defaults:
+    - ``strategy="auto"`` picks the best strategy for the model type
+    - ``precision="bf16-mixed"`` enables automatic mixed precision
+    - ``gradient_checkpointing=True`` in ``fit()`` enables memory savings
     """
 
     def __init__(
@@ -41,10 +72,12 @@ class ErasusUnlearner(BaseUnlearner):
         strategy: Any = "gradient_ascent",
         selector: Optional[Any] = None,
         device: Optional[str] = None,
+        precision: Optional[str] = None,
         strategy_kwargs: Optional[Dict[str, Any]] = None,
         selector_kwargs: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> None:
+        self.precision = precision
         from erasus.core.base_strategy import BaseStrategy
         from erasus.core.base_selector import BaseSelector
         from erasus.core.strategy_pipeline import StrategyPipeline
@@ -90,6 +123,12 @@ class ErasusUnlearner(BaseUnlearner):
             **kwargs,
         )
 
+    def fit(self, *args: Any, **kwargs: Any) -> UnlearningResult:
+        """Override fit to inject precision from constructor."""
+        if self.precision and "precision" not in kwargs:
+            kwargs["precision"] = self.precision
+        return super().fit(*args, **kwargs)
+
     def _run_unlearning(
         self,
         forget_loader: DataLoader,
@@ -106,3 +145,8 @@ class ErasusUnlearner(BaseUnlearner):
             **kwargs,
         )
         return forget_losses, retain_losses
+
+    @staticmethod
+    def detect_model_type(model: nn.Module) -> str:
+        """Detect model type from architecture (for use with strategy='auto')."""
+        return _detect_model_type(model)

@@ -85,6 +85,8 @@ class BaseUnlearner(ABC):
         early_stopping_patience: int = 0,
         early_stopping_monitor: str = "forget_loss",
         early_stopping_mode: str = "max",
+        precision: Optional[str] = None,
+        gradient_checkpointing: bool = False,
         **kwargs: Any,
     ) -> UnlearningResult:
         """
@@ -124,6 +126,20 @@ class BaseUnlearner(ABC):
         from erasus.utils.early_stopping import EarlyStopping
 
         start = time.time()
+
+        # Step 0 — precision and gradient checkpointing setup
+        self._amp_enabled = precision in ("16-mixed", "bf16-mixed")
+        self._amp_dtype = torch.bfloat16 if precision == "bf16-mixed" else torch.float16
+        if gradient_checkpointing:
+            if hasattr(self.model, "gradient_checkpointing_enable"):
+                self.model.gradient_checkpointing_enable()
+            elif hasattr(self.model, "set_gradient_checkpointing"):
+                self.model.set_gradient_checkpointing(True)
+
+        # Pass precision context to strategy via kwargs
+        if self._amp_enabled:
+            kwargs["_amp_enabled"] = True
+            kwargs["_amp_dtype"] = self._amp_dtype
 
         # Step 1 — coreset selection (Coreset object takes precedence)
         if coreset is not None and isinstance(coreset, Coreset):
