@@ -190,7 +190,7 @@ utility_drop ≤ (k/n) * ε_gen + sqrt(2(k/n) * log(1/δ))
 where `ε_gen` is the VC-dimension generalization bound and `δ` is the confidence parameter. This means coreset selection doesn't just work empirically -- there's a provable relationship between coreset size and retained model quality.
 
 ```python
-from erasus.certification.bounds import TheoreticalBounds
+from erasus.evaluation import UnlearningBenchmark
 
 bounds = TheoreticalBounds.pac_utility_bound(
     n_total=50000, n_forget=500, n_retain=49500, delta=0.05, model=model
@@ -264,7 +264,23 @@ See [`benchmarks/tofu/`](benchmarks/tofu/) for details and pre-generated results
 | Video | VideoMAE, VideoCLIP | `VideoUnlearner` |
 | Any | Auto-detect | `MultimodalUnlearner` |
 
----
+```
+erasus/
+  core/           Base classes, registry, config, coreset, pipeline, trainer
+  strategies/     41 unlearning algorithms
+  selectors/      24 coreset selection methods
+  unlearners/     High-level orchestrators (LLM, VLM, Diffusion, Audio, Video, Federated, Continual)
+  metrics/        25+ evaluation metrics
+  evaluation/     Adversarial evaluation, benchmarks, verification suite
+  losses/         8 loss functions
+  fabric.py       Composable primitives for custom loops
+  privacy/        DP mechanisms, certificates
+  certification/  Formal removal verification, theoretical bounds
+  experiments/    Tracking (W&B, MLflow), HPO, ablation
+  visualization/  16 visualization modules
+  cli/            Command-line interface
+  utils/          Helpers, callbacks, memory management, distributed
+```
 
 ## Evaluation
 
