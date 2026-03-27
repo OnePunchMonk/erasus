@@ -1,3 +1,6 @@
+# MCP config
+.mcp.json
+
 # Bytecode / caches
 __pycache__/
 *.py[cod]

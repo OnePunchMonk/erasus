@@ -1,0 +1,91 @@
+{
+  "metadata": {
+    "model": "SmallCNN (3-layer, CIFAR-10)",
+    "device": "Tesla T4 GPU",
+    "strategy": "gradient_ascent",
+    "epochs": 5,
+    "forget_set": "500 samples (classes 0,1)",
+    "retain_set": "1500 samples (classes 2-9)",
+    "base_forget_accuracy": 0.446,
+    "base_retain_accuracy": 0.45466666666666666
+  },
+  "results": {
+    "influence": [
+      {"fraction": 0.01, "forget_accuracy": 0.0, "retain_accuracy": 0.496, "time_s": 4.071, "status": "OK"},
+      {"fraction": 0.02, "forget_accuracy": 0.0, "retain_accuracy": 0.4913, "time_s": 3.026, "status": "OK"},
+      {"fraction": 0.05, "forget_accuracy": 0.0, "retain_accuracy": 0.4913, "time_s": 3.088, "status": "OK"},
+      {"fraction": 0.1, "forget_accuracy": 0.0, "retain_accuracy": 0.4913, "time_s": 3.416, "status": "OK"},
+      {"fraction": 0.2, "forget_accuracy": 0.0, "retain_accuracy": 0.4913, "time_s": 3.117, "status": "OK"},
+      {"fraction": 0.3, "forget_accuracy": 0.0, "retain_accuracy": 0.4913, "time_s": 3.146, "status": "OK"},
+      {"fraction": 0.5, "forget_accuracy": 0.0, "retain_accuracy": 0.4913, "time_s": 3.017, "status": "OK"},
+      {"fraction": 0.7, "forget_accuracy": 0.0, "retain_accuracy": 0.4913, "time_s": 3.407, "status": "OK"},
+      {"fraction": 1.0, "forget_accuracy": 0.0, "retain_accuracy": 0.4327, "time_s": 2.729, "status": "OK"}
+    ],
+    "gradient_norm": [
+      {"fraction": 0.01, "forget_accuracy": 0.0, "retain_accuracy": 0.4833, "time_s": 3.29, "status": "OK"},
+      {"fraction": 0.02, "forget_accuracy": 0.0, "retain_accuracy": 0.486, "time_s": 3.767, "status": "OK"},
+      {"fraction": 0.05, "forget_accuracy": 0.0, "retain_accuracy": 0.4913, "time_s": 3.231, "status": "OK"},
+      {"fraction": 0.1, "forget_accuracy": 0.0, "retain_accuracy": 0.492, "time_s": 3.257, "status": "OK"},
+      {"fraction": 0.2, "forget_accuracy": 0.0, "retain_accuracy": 0.49, "time_s": 4.008, "status": "OK"},
+      {"fraction": 0.3, "forget_accuracy": 0.0, "retain_accuracy": 0.4953, "time_s": 3.422, "status": "OK"},
+      {"fraction": 0.5, "forget_accuracy": 0.0, "retain_accuracy": 0.4927, "time_s": 3.505, "status": "OK"},
+      {"fraction": 0.7, "forget_accuracy": 0.0, "retain_accuracy": 0.4693, "time_s": 4.393, "status": "OK"},
+      {"fraction": 1.0, "forget_accuracy": 0.0, "retain_accuracy": 0.4327, "time_s": 2.801, "status": "OK"}
+    ],
+    "el2n": [
+      {"fraction": 0.01, "forget_accuracy": 0.002, "retain_accuracy": 0.4947, "time_s": 2.151, "status": "OK"},
+      {"fraction": 0.02, "forget_accuracy": 0.004, "retain_accuracy": 0.4967, "time_s": 2.144, "status": "OK"},
+      {"fraction": 0.05, "forget_accuracy": 0.004, "retain_accuracy": 0.4933, "time_s": 2.789, "status": "OK"},
+      {"fraction": 0.1, "forget_accuracy": 0.002, "retain_accuracy": 0.492, "time_s": 2.251, "status": "OK"},
+      {"fraction": 0.2, "forget_accuracy": 0.0, "retain_accuracy": 0.4913, "time_s": 2.29, "status": "OK"},
+      {"fraction": 0.3, "forget_accuracy": 0.0, "retain_accuracy": 0.4933, "time_s": 2.307, "status": "OK"},
+      {"fraction": 0.5, "forget_accuracy": 0.0, "retain_accuracy": 0.4953, "time_s": 2.842, "status": "OK"},
+      {"fraction": 0.7, "forget_accuracy": 0.0, "retain_accuracy": 0.4707, "time_s": 2.627, "status": "OK"},
+      {"fraction": 1.0, "forget_accuracy": 0.0, "retain_accuracy": 0.4327, "time_s": 2.658, "status": "OK"}
+    ],
+    "tracin": [
+      {"fraction": 0.01, "forget_accuracy": 0.0, "retain_accuracy": 0.4833, "time_s": 3.174, "status": "OK"},
+      {"fraction": 0.02, "forget_accuracy": 0.0, "retain_accuracy": 0.486, "time_s": 3.796, "status": "OK"},
+      {"fraction": 0.05, "forget_accuracy": 0.0, "retain_accuracy": 0.4913, "time_s": 3.168, "status": "OK"},
+      {"fraction": 0.1, "forget_accuracy": 0.0, "retain_accuracy": 0.492, "time_s": 3.234, "status": "OK"},
+      {"fraction": 0.2, "forget_accuracy": 0.0, "retain_accuracy": 0.4913, "time_s": 3.965, "status": "OK"},
+      {"fraction": 0.3, "forget_accuracy": 0.0, "retain_accuracy": 0.494, "time_s": 3.297, "status": "OK"},
+      {"fraction": 0.5, "forget_accuracy": 0.0, "retain_accuracy": 0.4927, "time_s": 3.436, "status": "OK"},
+      {"fraction": 0.7, "forget_accuracy": 0.0, "retain_accuracy": 0.4673, "time_s": 4.297, "status": "OK"},
+      {"fraction": 1.0, "forget_accuracy": 0.0, "retain_accuracy": 0.4327, "time_s": 2.659, "status": "OK"}
+    ],
+    "herding": [
+      {"fraction": 0.01, "forget_accuracy": 0.006, "retain_accuracy": 0.4953, "time_s": 2.117, "status": "OK"},
+      {"fraction": 0.02, "forget_accuracy": 0.004, "retain_accuracy": 0.494, "time_s": 2.202, "status": "OK"},
+      {"fraction": 0.05, "forget_accuracy": 0.004, "retain_accuracy": 0.4947, "time_s": 2.774, "status": "OK"},
+      {"fraction": 0.1, "forget_accuracy": 0.002, "retain_accuracy": 0.4933, "time_s": 2.161, "status": "OK"},
+      {"fraction": 0.2, "forget_accuracy": 0.0, "retain_accuracy": 0.4913, "time_s": 2.269, "status": "OK"},
+      {"fraction": 0.3, "forget_accuracy": 0.0, "retain_accuracy": 0.49, "time_s": 2.349, "status": "OK"},
+      {"fraction": 0.5, "forget_accuracy": 0.0, "retain_accuracy": 0.4927, "time_s": 2.864, "status": "OK"},
+      {"fraction": 0.7, "forget_accuracy": 0.0, "retain_accuracy": 0.478, "time_s": 2.574, "status": "OK"},
+      {"fraction": 1.0, "forget_accuracy": 0.0, "retain_accuracy": 0.4327, "time_s": 2.662, "status": "OK"}
+    ],
+    "kcenter": [
+      {"fraction": 0.01, "forget_accuracy": 0.002, "retain_accuracy": 0.4987, "time_s": 2.153, "status": "OK"},
+      {"fraction": 0.02, "forget_accuracy": 0.0, "retain_accuracy": 0.494, "time_s": 2.501, "status": "OK"},
+      {"fraction": 0.05, "forget_accuracy": 0.002, "retain_accuracy": 0.494, "time_s": 2.287, "status": "OK"},
+      {"fraction": 0.1, "forget_accuracy": 0.002, "retain_accuracy": 0.494, "time_s": 2.124, "status": "OK"},
+      {"fraction": 0.2, "forget_accuracy": 0.0, "retain_accuracy": 0.492, "time_s": 2.302, "status": "OK"},
+      {"fraction": 0.3, "forget_accuracy": 0.0, "retain_accuracy": 0.488, "time_s": 2.315, "status": "OK"},
+      {"fraction": 0.5, "forget_accuracy": 0.0, "retain_accuracy": 0.4907, "time_s": 2.923, "status": "OK"},
+      {"fraction": 0.7, "forget_accuracy": 0.0, "retain_accuracy": 0.474, "time_s": 2.564, "status": "OK"},
+      {"fraction": 1.0, "forget_accuracy": 0.0, "retain_accuracy": 0.4327, "time_s": 2.696, "status": "OK"}
+    ]
+  },
+  "random_baseline": [
+    {"fraction": 0.01, "forget_accuracy": 0.0, "retain_accuracy": 0.4947, "time_s": 2.002, "status": "OK"},
+    {"fraction": 0.02, "forget_accuracy": 0.002, "retain_accuracy": 0.4953, "time_s": 2.573, "status": "OK"},
+    {"fraction": 0.05, "forget_accuracy": 0.0, "retain_accuracy": 0.4927, "time_s": 2.021, "status": "OK"},
+    {"fraction": 0.1, "forget_accuracy": 0.002, "retain_accuracy": 0.4933, "time_s": 2.059, "status": "OK"},
+    {"fraction": 0.2, "forget_accuracy": 0.0, "retain_accuracy": 0.4907, "time_s": 2.135, "status": "OK"},
+    {"fraction": 0.3, "forget_accuracy": 0.0, "retain_accuracy": 0.49, "time_s": 2.568, "status": "OK"},
+    {"fraction": 0.5, "forget_accuracy": 0.0, "retain_accuracy": 0.4967, "time_s": 2.409, "status": "OK"},
+    {"fraction": 0.7, "forget_accuracy": 0.0, "retain_accuracy": 0.478, "time_s": 2.494, "status": "OK"},
+    {"fraction": 1.0, "forget_accuracy": 0.0, "retain_accuracy": 0.4327, "time_s": 2.641, "status": "OK"}
+  ]
+}
