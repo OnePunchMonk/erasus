@@ -1,0 +1,689 @@
+{
+  "metadata": {
+    "timestamp": "2026-03-27T23:08:25.516721",
+    "strategy": "gradient_ascent",
+    "n_forget": 200,
+    "n_retain": 800,
+    "fractions": [
+      0.01,
+      0.02,
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.3,
+      0.5,
+      0.7,
+      1.0
+    ],
+    "base_forget_accuracy": 0.085,
+    "base_retain_accuracy": 0.09625
+  },
+  "results": {
+    "influence": [
+      {
+        "fraction": 0.01,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.342,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.02,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.08,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.05,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.081,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.1,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.079,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.15,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.08,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.2,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.076,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.3,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.076,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.5,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.081,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.7,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.079,
+        "status": "OK"
+      },
+      {
+        "fraction": 1.0,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.031,
+        "status": "OK"
+      }
+    ],
+    "gradient_norm": [
+      {
+        "fraction": 0.01,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.043,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.02,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.043,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.05,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.042,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.1,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.042,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.15,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.043,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.2,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.044,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.3,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.047,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.5,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.046,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.7,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.046,
+        "status": "OK"
+      },
+      {
+        "fraction": 1.0,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.031,
+        "status": "OK"
+      }
+    ],
+    "el2n": [
+      {
+        "fraction": 0.01,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.095,
+        "tradeoff_score": 0.0869,
+        "time_s": 0.025,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.02,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.027,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.05,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.026,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.1,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.025,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.15,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.025,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.2,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.026,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.3,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.027,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.5,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.095,
+        "tradeoff_score": 0.0869,
+        "time_s": 0.029,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.7,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.03,
+        "status": "OK"
+      },
+      {
+        "fraction": 1.0,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.03,
+        "status": "OK"
+      }
+    ],
+    "tracin": [
+      {
+        "fraction": 0.01,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.043,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.02,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.044,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.05,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.044,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.1,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.043,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.15,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.043,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.2,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.043,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.3,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.044,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.5,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.044,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.7,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.047,
+        "status": "OK"
+      },
+      {
+        "fraction": 1.0,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.029,
+        "status": "OK"
+      }
+    ],
+    "herding": [
+      {
+        "fraction": 0.01,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.095,
+        "tradeoff_score": 0.0869,
+        "time_s": 0.025,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.02,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.026,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.05,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.027,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.1,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.026,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.15,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.026,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.2,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.027,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.3,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.026,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.5,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.029,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.7,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.03,
+        "status": "OK"
+      },
+      {
+        "fraction": 1.0,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.031,
+        "status": "OK"
+      }
+    ],
+    "kcenter": [
+      {
+        "fraction": 0.01,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0925,
+        "tradeoff_score": 0.0846,
+        "time_s": 0.025,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.02,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.025,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.05,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.025,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.1,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.025,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.15,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.027,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.2,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.027,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.3,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.026,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.5,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.029,
+        "status": "OK"
+      },
+      {
+        "fraction": 0.7,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.03,
+        "status": "OK"
+      },
+      {
+        "fraction": 1.0,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.029,
+        "status": "OK"
+      }
+    ],
+    "forgetting_events": [
+      {
+        "fraction": 0.01,
+        "forget_accuracy": null,
+        "retain_accuracy": null,
+        "tradeoff_score": null,
+        "time_s": 0,
+        "status": "ERROR",
+        "error": "ForgettingEventsSelector requires a 'forgetting_stats' dictionary mapping sample index -> forgetting event count. This c"
+      },
+      {
+        "fraction": 0.02,
+        "forget_accuracy": null,
+        "retain_accuracy": null,
+        "tradeoff_score": null,
+        "time_s": 0,
+        "status": "ERROR",
+        "error": "ForgettingEventsSelector requires a 'forgetting_stats' dictionary mapping sample index -> forgetting event count. This c"
+      },
+      {
+        "fraction": 0.05,
+        "forget_accuracy": null,
+        "retain_accuracy": null,
+        "tradeoff_score": null,
+        "time_s": 0,
+        "status": "ERROR",
+        "error": "ForgettingEventsSelector requires a 'forgetting_stats' dictionary mapping sample index -> forgetting event count. This c"
+      },
+      {
+        "fraction": 0.1,
+        "forget_accuracy": null,
+        "retain_accuracy": null,
+        "tradeoff_score": null,
+        "time_s": 0,
+        "status": "ERROR",
+        "error": "ForgettingEventsSelector requires a 'forgetting_stats' dictionary mapping sample index -> forgetting event count. This c"
+      },
+      {
+        "fraction": 0.15,
+        "forget_accuracy": null,
+        "retain_accuracy": null,
+        "tradeoff_score": null,
+        "time_s": 0,
+        "status": "ERROR",
+        "error": "ForgettingEventsSelector requires a 'forgetting_stats' dictionary mapping sample index -> forgetting event count. This c"
+      },
+      {
+        "fraction": 0.2,
+        "forget_accuracy": null,
+        "retain_accuracy": null,
+        "tradeoff_score": null,
+        "time_s": 0,
+        "status": "ERROR",
+        "error": "ForgettingEventsSelector requires a 'forgetting_stats' dictionary mapping sample index -> forgetting event count. This c"
+      },
+      {
+        "fraction": 0.3,
+        "forget_accuracy": null,
+        "retain_accuracy": null,
+        "tradeoff_score": null,
+        "time_s": 0,
+        "status": "ERROR",
+        "error": "ForgettingEventsSelector requires a 'forgetting_stats' dictionary mapping sample index -> forgetting event count. This c"
+      },
+      {
+        "fraction": 0.5,
+        "forget_accuracy": null,
+        "retain_accuracy": null,
+        "tradeoff_score": null,
+        "time_s": 0,
+        "status": "ERROR",
+        "error": "ForgettingEventsSelector requires a 'forgetting_stats' dictionary mapping sample index -> forgetting event count. This c"
+      },
+      {
+        "fraction": 0.7,
+        "forget_accuracy": null,
+        "retain_accuracy": null,
+        "tradeoff_score": null,
+        "time_s": 0,
+        "status": "ERROR",
+        "error": "ForgettingEventsSelector requires a 'forgetting_stats' dictionary mapping sample index -> forgetting event count. This c"
+      },
+      {
+        "fraction": 1.0,
+        "forget_accuracy": 0.085,
+        "retain_accuracy": 0.0963,
+        "tradeoff_score": 0.0881,
+        "time_s": 0.029,
+        "status": "OK"
+      }
+    ]
+  },
+  "random_baseline": [
+    {
+      "fraction": 0.01,
+      "forget_accuracy": 0.08,
+      "retain_accuracy": 0.095,
+      "tradeoff_score": 0.0874,
+      "time_s": 0.024,
+      "status": "OK"
+    },
+    {
+      "fraction": 0.02,
+      "forget_accuracy": 0.085,
+      "retain_accuracy": 0.0963,
+      "tradeoff_score": 0.0881,
+      "time_s": 0.024,
+      "status": "OK"
+    },
+    {
+      "fraction": 0.05,
+      "forget_accuracy": 0.085,
+      "retain_accuracy": 0.0963,
+      "tradeoff_score": 0.0881,
+      "time_s": 0.025,
+      "status": "OK"
+    },
+    {
+      "fraction": 0.1,
+      "forget_accuracy": 0.085,
+      "retain_accuracy": 0.0963,
+      "tradeoff_score": 0.0881,
+      "time_s": 0.024,
+      "status": "OK"
+    },
+    {
+      "fraction": 0.15,
+      "forget_accuracy": 0.085,
+      "retain_accuracy": 0.0963,
+      "tradeoff_score": 0.0881,
+      "time_s": 0.025,
+      "status": "OK"
+    },
+    {
+      "fraction": 0.2,
+      "forget_accuracy": 0.085,
+      "retain_accuracy": 0.0963,
+      "tradeoff_score": 0.0881,
+      "time_s": 0.025,
+      "status": "OK"
+    },
+    {
+      "fraction": 0.3,
+      "forget_accuracy": 0.085,
+      "retain_accuracy": 0.0963,
+      "tradeoff_score": 0.0881,
+      "time_s": 0.025,
+      "status": "OK"
+    },
+    {
+      "fraction": 0.5,
+      "forget_accuracy": 0.085,
+      "retain_accuracy": 0.095,
+      "tradeoff_score": 0.0869,
+      "time_s": 0.027,
+      "status": "OK"
+    },
+    {
+      "fraction": 0.7,
+      "forget_accuracy": 0.085,
+      "retain_accuracy": 0.0963,
+      "tradeoff_score": 0.0881,
+      "time_s": 0.038,
+      "status": "OK"
+    },
+    {
+      "fraction": 1.0,
+      "forget_accuracy": 0.085,
+      "retain_accuracy": 0.0963,
+      "tradeoff_score": 0.0881,
+      "time_s": 0.029,
+      "status": "OK"
+    }
+  ]
+}
