@@ -74,6 +74,9 @@ from erasus.strategies.diffusion_specific.safe_latents import SafeLatentsStrateg
 # Ensemble
 from erasus.strategies.ensemble_strategy import EnsembleStrategy
 
+# Auto strategy selection
+from erasus.strategies.auto_strategy import AutoStrategy
+
 __all__ = [
     "GradientAscentStrategy",
     "ModalityDecouplingStrategy",
@@ -117,4 +120,5 @@ __all__ = [
     "AttentionUnlearningStrategy",
     "VisionTextSplitStrategy",
     "EnsembleStrategy",
+    "AutoStrategy",
 ]
