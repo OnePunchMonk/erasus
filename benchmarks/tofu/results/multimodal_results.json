@@ -1,0 +1,23 @@
+{
+  "model": "CLIP ViT-B/32 + linear head",
+  "params": "151M (7.6M trainable)",
+  "device": "Tesla T4",
+  "strategy": "manual gradient ascent (lr=1e-2, 10 epochs)",
+  "base": {"forget_acc": 1.0, "retain_acc": 0.9993, "forget_zs": 0.512, "retain_zs": 0.6953},
+  "results": {
+    "top_loss": [
+      {"fraction": 0.05, "forget_acc": 0.662, "retain_acc": 1.0, "forget_zs": 0.502, "retain_zs": 0.65, "score": 0.338},
+      {"fraction": 0.1, "forget_acc": 0.504, "retain_acc": 1.0, "forget_zs": 0.5, "retain_zs": 0.63, "score": 0.496},
+      {"fraction": 0.2, "forget_acc": 0.506, "retain_acc": 1.0, "forget_zs": 0.508, "retain_zs": 0.64, "score": 0.494},
+      {"fraction": 0.5, "forget_acc": 0.504, "retain_acc": 0.9993, "forget_zs": 0.504, "retain_zs": 0.73, "score": 0.4957},
+      {"fraction": 1.0, "forget_acc": 0.0, "retain_acc": 0.9987, "forget_zs": 0.0, "retain_zs": 0.7213, "score": 0.9987}
+    ],
+    "random": [
+      {"fraction": 0.05, "forget_acc": 1.0, "retain_acc": 1.0, "forget_zs": 0.512, "retain_zs": 0.7187, "score": 0.0},
+      {"fraction": 0.1, "forget_acc": 0.52, "retain_acc": 1.0, "forget_zs": 0.506, "retain_zs": 0.624, "score": 0.48},
+      {"fraction": 0.2, "forget_acc": 0.974, "retain_acc": 1.0, "forget_zs": 0.51, "retain_zs": 0.7067, "score": 0.026},
+      {"fraction": 0.5, "forget_acc": 0.0, "retain_acc": 1.0, "forget_zs": 0.0, "retain_zs": 0.6893, "score": 1.0},
+      {"fraction": 1.0, "forget_acc": 0.0, "retain_acc": 0.9987, "forget_zs": 0.0, "retain_zs": 0.7213, "score": 0.9987}
+    ]
+  }
+}
