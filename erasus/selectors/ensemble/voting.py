@@ -15,6 +15,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from erasus.core.base_selector import BaseSelector
+from erasus.core.exceptions import SelectorError
 from erasus.core.registry import selector_registry, Registry
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,10 @@ class VotingSelector(BaseSelector):
                 continue
                 
         if not all_votes:
-            return []
+            raise SelectorError(
+                "VotingSelector did not receive any votes. "
+                "All underlying selectors failed; check logs for details or provide valid inputs."
+            )
             
         # Weighted voting? Here simple frequency count.
         counts = Counter(all_votes)

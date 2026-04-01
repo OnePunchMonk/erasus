@@ -5,10 +5,11 @@
     Universal machine unlearning via coreset selection
   </p>
   <p align="center">
+    <a href="https://github.com/OnePunchMonk/erasus/actions/workflows/ci.yml"><img src="https://github.com/OnePunchMonk/erasus/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+    <a href="https://erasus.readthedocs.io/en/latest/"><img src="https://readthedocs.org/projects/erasus/badge/?version=latest" alt="Documentation"></a>
     <a href="#installation"><img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python 3.9+"></a>
     <a href="#installation"><img src="https://img.shields.io/badge/pytorch-2.0+-ee4c2c.svg" alt="PyTorch 2.0+"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License: MIT"></a>
-    <a href="#test-status"><img src="https://img.shields.io/badge/tests-465%20passed-brightgreen.svg" alt="Tests"></a>
   </p>
 </p>
 
@@ -58,6 +59,33 @@ Forget data + Retain data  -->  Coreset selection  -->  Targeted unlearning  -->
 3. **Verify** via membership inference attacks, accuracy checks, and certified removal bounds
 
 This works across **LLMs**, **VLMs**, **Diffusion**, **Audio**, and **Video** models through a single API.
+
+---
+
+## Results
+
+### Coreset ablation: utility preservation vs. coreset fraction
+
+The core empirical result — small coresets (5–10%) preserve nearly all model utility while achieving full forgetting:
+
+<p align="center">
+  <img src="benchmarks/tofu/results/coreset_ablation_gpu.png" alt="Coreset Ablation: Utility Preservation" width="800">
+</p>
+
+> **Key finding:** Influence-based coreset selection maintains retain accuracy within 1% of the base model at coreset fractions ≤ 30%, while all selectors achieve forget accuracy ≈ 0 at every fraction. Using 5–10% of the forget set approximates full-set unlearning with 10–20× less compute.
+
+### Benchmark leaderboards
+
+All 29 strategies benchmarked head-to-head on three standard protocols:
+
+| Benchmark | Best Method | Forget Acc ↓ | Retain Acc ↑ | Full Results |
+|-----------|------------|:------------:|:------------:|:------------:|
+| **TOFU** | knowledge_distillation | 0.0300 | 0.1913 | [Leaderboard](benchmarks/tofu/TOFU_LEADERBOARD.md) |
+| **MUSE** | safe_latents | 0.0156 | 0.2109 | [Leaderboard](benchmarks/muse/MUSE_LEADERBOARD.md) |
+| **WMDP (Bio)** | attention_unlearning | 0.1250 | 0.3984 | [Leaderboard](benchmarks/wmdp/WMDP_LEADERBOARD_BIO.md) |
+| **WMDP (Cyber)** | — | — | — | [Leaderboard](benchmarks/wmdp/WMDP_LEADERBOARD_CYBER.md) |
+
+See [`benchmarks/`](benchmarks/) for coreset comparison, tradeoff curves, and multimodal results.
 
 ---
 
@@ -333,6 +361,29 @@ python3 -m pytest tests/ -v --tb=short \
   --ignore=tests/unit/test_sprint_b.py \
   --ignore=tests/unit/test_sprint_f.py
 ```
+
+---
+
+## Documentation
+
+📖 **[Full documentation on ReadTheDocs](https://erasus.readthedocs.io/en/latest/)** — Quick Start, Conceptual Guide, Strategy & Selector Selection Guides, API Reference, and tutorials.
+
+---
+
+## Notebooks
+
+Interactive notebooks with one-click Colab access:
+
+| Notebook | Description | Colab |
+|----------|-------------|:-----:|
+| [Introduction](notebooks/01_introduction.ipynb) | Getting started with Erasus | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/OnePunchMonk/erasus/blob/main/notebooks/01_introduction.ipynb) |
+| [Coreset Analysis](notebooks/02_coreset_analysis.ipynb) | Coreset selection theory & practice | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/OnePunchMonk/erasus/blob/main/notebooks/02_coreset_analysis.ipynb) |
+| [CLIP Unlearning](notebooks/clip_unlearning_demo.ipynb) | VLM unlearning with CLIP | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/OnePunchMonk/erasus/blob/main/notebooks/clip_unlearning_demo.ipynb) |
+| [Copyright Removal](notebooks/copyright_removal_example.ipynb) | Copyright content removal example | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/OnePunchMonk/erasus/blob/main/notebooks/copyright_removal_example.ipynb) |
+| [Harry Potter GPT-2](notebooks/demo_remove_harry_potter_from_gpt2.ipynb) | Remove Harry Potter knowledge from GPT-2 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/OnePunchMonk/erasus/blob/main/notebooks/demo_remove_harry_potter_from_gpt2.ipynb) |
+| [NSFW Removal (SD)](notebooks/nsfw_removal_stable_diffusion.ipynb) | Remove NSFW concepts from Stable Diffusion | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/OnePunchMonk/erasus/blob/main/notebooks/nsfw_removal_stable_diffusion.ipynb) |
+| [Coreset Ablation (GPU)](benchmarks/tofu/coreset_ablation_gpu.ipynb) | GPU coreset ablation experiment | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/OnePunchMonk/erasus/blob/main/benchmarks/tofu/coreset_ablation_gpu.ipynb) |
+| [VLM Ablation (GPU)](benchmarks/tofu/vlm_coreset_ablation_gpu.ipynb) | VLM coreset ablation experiment | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/OnePunchMonk/erasus/blob/main/benchmarks/tofu/vlm_coreset_ablation_gpu.ipynb) |
 
 ---
 

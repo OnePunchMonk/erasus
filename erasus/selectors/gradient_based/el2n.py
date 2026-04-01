@@ -18,6 +18,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from erasus.core.base_selector import BaseSelector
+from erasus.core.exceptions import SelectorError
 from erasus.core.registry import selector_registry
 
 
@@ -48,11 +49,11 @@ class EL2NSelector(BaseSelector):
                 labels = batch[1].to(device) if len(batch) > 1 else None
                 
                 if labels is None:
-                    # EL2N requires ground truth labels to compute error
-                    # If unlabeled, it reduces to confidence (entropy)
-                    # For now, append 0 or fallback
-                    scores.extend([0.0] * inputs.size(0))
-                    continue
+                    raise SelectorError(
+                        "EL2NSelector requires labels (batch[1]) to compute the error vector. "
+                        "Your DataLoader yielded unlabeled batches. Provide a dataset that yields "
+                        "(inputs, labels) tuples or use a selector that does not require labels."
+                    )
                 
                 outputs = model(inputs)
                 logits = outputs.logits if hasattr(outputs, "logits") else outputs

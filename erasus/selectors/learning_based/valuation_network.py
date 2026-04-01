@@ -46,22 +46,20 @@ class ValuationNetworkSelector(BaseSelector):
                 if isinstance(batch, (list, tuple)):
                     inputs = batch[0].to(device)
                     labels = batch[1].to(device) if len(batch) > 1 else None
-                else: 
-                     # Valuation net typically needs (x, y)
-                     continue 
+                else:
+                    raise SelectorError(
+                        "ValuationNetworkSelector requires batches as (inputs, labels) tuples. "
+                        "Your DataLoader yielded a non-tuple batch."
+                    )
                 
                 if labels is None:
-                    # If unlabeled, val_net might be V(x)
-                    # Try passing just inputs
-                    batch_scores = val_net(inputs)
-                else:
-                    # Check val_net signature or expected input format
-                    # Usually V(x, y) or V(concat(x, y))
-                    # We assume val_net(inputs, labels) or val_net(inputs) returns [B] or [B, 1]
-                    try:
-                        batch_scores = val_net(inputs, labels)
-                    except TypeError:
-                        batch_scores = val_net(inputs)
+                    raise SelectorError(
+                        "ValuationNetworkSelector requires labels (batch[1]) to score samples. "
+                        "Your DataLoader yielded unlabeled batches."
+                    )
+
+                # We assume val_net(inputs, labels) returns [B] or [B, 1]
+                batch_scores = val_net(inputs, labels)
                 
                 # Flatten scores
                 if batch_scores.dim() > 1:
@@ -70,7 +68,10 @@ class ValuationNetworkSelector(BaseSelector):
                 scores.extend(batch_scores.cpu().tolist())
                 
         if not scores:
-            return []
+            raise SelectorError(
+                "ValuationNetworkSelector did not produce any scores. "
+                "Ensure your DataLoader yields at least one labeled batch."
+            )
             
         n = len(scores)
         k = min(k, n)
