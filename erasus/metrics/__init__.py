@@ -46,6 +46,9 @@ from erasus.metrics.forgetting.memorization import (
     VerbatimMemorizationMetric,
 )
 
+# Issue #41: Cross-prompt leakage test
+from erasus.metrics.forgetting.cross_prompt_leakage import CrossPromptLeakageMetric
+
 # Register all metrics for CLI / registry-based resolution
 for name, cls in [
     ("accuracy", AccuracyMetric),
@@ -65,6 +68,7 @@ for name, cls in [
     ("extraction_strength", ExtractionStrengthMetric),
     ("exact_memorization", ExactMemorizationMetric),
     ("verbatim_memorization", VerbatimMemorizationMetric),
+    ("cross_prompt_leakage", CrossPromptLeakageMetric),
 ]:
     try:
         metric_registry.register(name)(cls)
@@ -106,4 +110,6 @@ __all__ = [
     "ExtractionStrengthMetric",
     "ExactMemorizationMetric",
     "VerbatimMemorizationMetric",
+    # Issue #41
+    "CrossPromptLeakageMetric",
 ]
