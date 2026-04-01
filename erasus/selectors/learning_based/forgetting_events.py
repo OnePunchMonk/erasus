@@ -30,7 +30,7 @@ class ForgettingEventsSelector(BaseSelector):
     Usually requires pre-computed statistics.
     
     If 'stats' is not provided, this selector CANNOT run dynamically on a static model.
-    It raises an error or returns random fallback with warning.
+    It raises an error.
     """
 
     def select(

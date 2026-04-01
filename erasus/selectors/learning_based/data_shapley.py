@@ -27,8 +27,8 @@ logger = logging.getLogger(__name__)
 class DataShapleySelector(BaseSelector):
     """
     Monte-Carlo approximation of Data Shapley (TMC-Shapley).
-    Very slow for large N. Stub implementation returns Random with warning
-    unless 'precomputed_values' is provided.
+    Very slow for large N. This implementation requires 'precomputed_values'
+    (computed externally) and does not silently fall back.
     """
 
     def select(
