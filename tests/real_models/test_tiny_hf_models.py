@@ -1,5 +1,8 @@
 """
 Slow tests for tiny real-model integrations.
+
+Uses synthetic HuggingFace configs (no weight downloads). Also marked
+``real_models`` so CI can group optional HF-heavy jobs.
 """
 
 from __future__ import annotations
@@ -8,7 +11,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-pytestmark = pytest.mark.slow
+pytestmark = [pytest.mark.slow, pytest.mark.real_models]
 
 
 def _make_token_loader(vocab_size: int = 64) -> DataLoader:

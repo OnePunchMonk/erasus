@@ -15,6 +15,7 @@ def test_standard_benchmark_suite_runs(tmp_path):
     report = suite.run()
 
     assert len(report.entries) == 4
+    assert all(e.status == "ok" for e in report.entries)
 
     json_path = tmp_path / "suite.json"
     md_path = tmp_path / "suite.md"

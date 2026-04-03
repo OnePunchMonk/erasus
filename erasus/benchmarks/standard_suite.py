@@ -28,12 +28,15 @@ class BenchmarkSuiteReport:
         lines = [
             "# Standard Benchmark Suite",
             "",
-            "| Benchmark | Status | Notes |",
+            "| Benchmark | Status | Verdict / notes |",
             "| --- | --- | --- |",
         ]
         for entry in self.entries:
-            notes = entry.details.get("notes", "")
-            lines.append(f"| {entry.name} | {entry.status} | {notes} |")
+            if entry.status == "error":
+                cell = entry.details.get("error", "")
+            else:
+                cell = entry.details.get("verdict") or entry.details.get("notes", "")
+            lines.append(f"| {entry.name} | {entry.status} | {cell} |")
         return "\n".join(lines)
 
 
@@ -46,15 +49,27 @@ class StandardBenchmarkSuite:
         self.benchmarks = list(benchmarks or self.DEFAULT_BENCHMARKS)
 
     def run(self) -> BenchmarkSuiteReport:
+        from erasus.benchmarks.micro_protocol import run_micro_protocol
+
         entries = []
         for benchmark in self.benchmarks:
-            entries.append(
-                BenchmarkSuiteEntry(
-                    name=benchmark,
-                    status="configured",
-                    details={"notes": f"{benchmark} runner is available through the standard suite"},
+            try:
+                details = run_micro_protocol(benchmark, epochs=1)
+                entries.append(
+                    BenchmarkSuiteEntry(
+                        name=benchmark,
+                        status=details.get("status", "ok"),
+                        details=details,
+                    ),
                 )
-            )
+            except Exception as exc:
+                entries.append(
+                    BenchmarkSuiteEntry(
+                        name=benchmark,
+                        status="error",
+                        details={"error": str(exc)},
+                    ),
+                )
         return BenchmarkSuiteReport(entries=entries)
 
     def save_report(

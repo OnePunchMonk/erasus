@@ -1,0 +1,41 @@
+# Full experiment layout (nested). Also compatible: flat keys like model_name / strategy
+# in configs/default.yaml — both merge into the same runtime ErasusConfig.
+#
+#   erasus unlearn --config configs/example_full_run.yaml
+#   erasus unlearn --config configs/example_full_run.yaml --override strategy.epochs=3
+
+experiment_name: erasus_full_run
+
+model:
+  name: openai/clip-vit-base-patch32
+  model_type: vlm
+  device: cuda
+
+data:
+  forget_data_dir: null   # set to your forget-set path
+  retain_data_dir: null
+  batch_size: 32
+
+strategy:
+  name: modality_decoupling
+  lr: 1.0e-4
+  epochs: 10
+  extra_params:
+    vision_lr: 1.0e-5
+    text_lr: 1.0e-4
+    alignment_weight: 0.1
+
+selector:
+  name: influence
+  prune_ratio: 0.1
+  extra_params: {}
+
+metrics:
+  - accuracy
+  - mia
+
+tracking:
+  backend: local        # local | wandb | mlflow
+  project: erasus
+  wandb_project: null
+  log_dir: null

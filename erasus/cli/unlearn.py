@@ -98,6 +98,47 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         help="Whether the monitored metric should be minimised or maximised (default: max).",
     )
 
+    ckpt_group = parser.add_argument_group("checkpointing & resume")
+    ckpt_group.add_argument(
+        "--resume-from",
+        type=str,
+        default=None,
+        help="Checkpoint dir or .pt from a previous run (see unlearning_checkpoint.*).",
+    )
+    ckpt_group.add_argument(
+        "--checkpoint-dir",
+        type=str,
+        default=None,
+        help="Directory to save periodic checkpoints (requires --checkpoint-every > 0).",
+    )
+    ckpt_group.add_argument(
+        "--checkpoint-every",
+        type=int,
+        default=0,
+        help="Save checkpoint every N epochs (0 = disabled).",
+    )
+
+    track_group = parser.add_argument_group("experiment tracking (W&B / MLflow / local)")
+    track_group.add_argument(
+        "--tracking-backend",
+        type=str,
+        default=None,
+        choices=["local", "wandb", "mlflow"],
+        help="Override tracking backend from config (default: config or local).",
+    )
+    track_group.add_argument(
+        "--tracking-project",
+        type=str,
+        default=None,
+        help="Project name for wandb/mlflow.",
+    )
+
+    parser.add_argument(
+        "--profile",
+        action="store_true",
+        help="Print UnlearningProfiler timing for the fit() call.",
+    )
+
     parser.set_defaults(func=run_unlearn)
 
 
@@ -147,7 +188,6 @@ def _build_dataloader(data_dir: str, batch_size: int = 32) -> Optional[torch.uti
 def run_unlearn(args: argparse.Namespace) -> None:
     """Execute the unlearning pipeline."""
     from erasus.core.config import ErasusConfig
-    from erasus.core.registry import strategy_registry, selector_registry
     from erasus.experiments.hydra_config import compose_experiment_config
 
     # ---- Load config ----
@@ -177,12 +217,16 @@ def run_unlearn(args: argparse.Namespace) -> None:
     print("=" * 60)
     print("  ERASUS — Machine Unlearning Pipeline")
     print("=" * 60)
+    print(f"  Experiment: {getattr(config, 'experiment_name', 'erasus_run')}")
     print(f"  Model   : {config.model_name} ({config.model_type})")
     print(f"  Strategy: {config.strategy}")
     print(f"  Selector: {config.selector}")
     print(f"  Epochs  : {config.epochs}")
     print(f"  Device  : {config.device}")
     print(f"  Prune   : {config.prune_ratio:.0%}")
+    print(f"  Metrics : {getattr(config, 'metrics', ['accuracy'])}")
+    tb = getattr(config, "tracking_backend", "local")
+    print(f"  Tracking: {tb} (project={getattr(config, 'tracking_project', 'erasus')})")
     if args.coreset_k:
         print(f"  Coreset k: {args.coreset_k}")
     if args.validate_every > 0:
@@ -191,6 +235,11 @@ def run_unlearn(args: argparse.Namespace) -> None:
         print(f"  Early stop: patience={args.early_stop_patience}, "
               f"monitor={args.early_stop_monitor} ({args.early_stop_mode})")
     print("=" * 60)
+
+    if args.tracking_backend:
+        config.tracking_backend = args.tracking_backend
+    if args.tracking_project:
+        config.tracking_project = args.tracking_project
 
     if args.dry_run:
         print("\n[DRY-RUN] Config is valid.  Full parameter dump:")
@@ -259,6 +308,7 @@ def run_unlearn(args: argparse.Namespace) -> None:
         validation_metrics = None
         if args.validate_every > 0:
             from erasus.metrics import MetricSuite
+
             validation_metrics = MetricSuite(["accuracy"]).metrics
 
         # ---- Run unlearning ----
@@ -278,8 +328,22 @@ def run_unlearn(args: argparse.Namespace) -> None:
             fit_kwargs["coreset"] = coreset_obj
         if validation_metrics is not None:
             fit_kwargs["validation_metrics"] = validation_metrics
+        if args.resume_from:
+            fit_kwargs["resume_from"] = args.resume_from
+        if args.checkpoint_dir:
+            fit_kwargs["checkpoint_dir"] = args.checkpoint_dir
+        if args.checkpoint_every:
+            fit_kwargs["checkpoint_every"] = args.checkpoint_every
 
-        result = unlearner.fit(**fit_kwargs)
+        if args.profile:
+            from erasus.utils.profiling import UnlearningProfiler
+
+            profiler = UnlearningProfiler()
+            with profiler.profile("unlearning_fit"):
+                result = unlearner.fit(**fit_kwargs)
+            print(profiler.summary())
+        else:
+            result = unlearner.fit(**fit_kwargs)
         elapsed = time.time() - t0
         print(f"  ✓ Unlearning complete in {elapsed:.1f}s")
         print(f"    Coreset: {result.coreset_size}/{result.original_forget_size} "
@@ -288,6 +352,55 @@ def run_unlearn(args: argparse.Namespace) -> None:
             print(f"    Final forget loss: {result.forget_loss_history[-1]:.4f}")
         if result.retain_loss_history:
             print(f"    Final retain loss: {result.retain_loss_history[-1]:.4f}")
+
+        eval_metrics: dict = {}
+        mnames = getattr(config, "metrics", None) or ["accuracy"]
+        try:
+            from erasus.metrics import MetricSuite
+
+            suite = MetricSuite(mnames)
+            eval_metrics = suite.run(unlearner.model, forget_loader, retain_loader or forget_loader)
+            print(f"    Metrics: {eval_metrics}")
+        except Exception as me:
+            print(f"  ⚠ Metric evaluation skipped: {me}")
+
+        try:
+            from erasus.experiments.experiment_tracker import ExperimentTracker
+
+            tracker = ExperimentTracker(
+                name=getattr(config, "experiment_name", "erasus_run"),
+                backend=getattr(config, "tracking_backend", "local"),
+                project=getattr(config, "tracking_project", "erasus"),
+            )
+            tracker.log_config(config.to_dict())
+            curves: dict[str, dict[str, list[float]]] = {
+                "forget_loss": {
+                    "x": [float(i) for i in range(len(result.forget_loss_history))],
+                    "y": [float(x) for x in result.forget_loss_history],
+                },
+            }
+            if result.retain_loss_history:
+                curves["retain_loss"] = {
+                    "x": [float(i) for i in range(len(result.retain_loss_history))],
+                    "y": [float(x) for x in result.retain_loss_history],
+                }
+            summary_metrics: dict = {}
+            if result.forget_loss_history:
+                summary_metrics["final_forget_loss"] = float(result.forget_loss_history[-1])
+            if result.retain_loss_history:
+                summary_metrics["final_retain_loss"] = float(result.retain_loss_history[-1])
+            summary_metrics.update({k: float(v) for k, v in eval_metrics.items() if isinstance(v, (int, float))})
+            tracker.log_unlearning_run(
+                strategy=config.strategy,
+                selector=config.selector,
+                metrics=summary_metrics,
+                curves=curves,
+                model_path=str(args.output) if args.output else None,
+                metadata={"elapsed_s": elapsed},
+            )
+            tracker.finish()
+        except Exception as te:
+            print(f"  ⚠ Experiment tracking skipped: {te}")
     else:
         print("  ⚠ No forget dataset specified or loadable.")
         print("  → Add 'forget_data_dir' to your YAML config or use --forget-dir.")

@@ -63,6 +63,8 @@ dev = [
     "ruff>=0.1",
     "mypy>=1.5",
     "pre-commit>=3.4",
+    "fastapi>=0.110",
+    "httpx>=0.27",
 ]
 
 [project.scripts]

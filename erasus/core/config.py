@@ -5,7 +5,7 @@ Erasus Configuration Module.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
 
@@ -13,6 +13,8 @@ import yaml
 @dataclass
 class ErasusConfig:
     """Unified configuration for an Erasus unlearning run."""
+
+    experiment_name: str = "erasus_run"
 
     # Model
     model_name: str = "openai/clip-vit-base-patch32"
@@ -32,6 +34,11 @@ class ErasusConfig:
     epochs: int = 5
     batch_size: int = 32
     lr: float = 1e-4
+
+    # Evaluation / tracking
+    metrics: List[str] = field(default_factory=lambda: ["accuracy"])
+    tracking_backend: str = "local"
+    tracking_project: str = "erasus"
 
     # Logging
     log_dir: Optional[str] = None
