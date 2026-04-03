@@ -38,6 +38,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+from erasus.metrics.utility.rouge import ROUGEMetric
+
 
 # ======================================================================
 # Protocol definitions
@@ -214,6 +216,17 @@ class BenchmarkReport:
             lines.append(
                 f"{name:<30} {mr.mean:>8.4f} {ci_str:>20} {gold_str:>8} {gap_str:>8} {pass_str:>6}"
             )
+        capability_delta = self.metadata.get("capability_delta_report")
+        if capability_delta:
+            lines.extend([
+                "",
+                "Capability Delta Report:",
+            ])
+            for metric_name, delta in sorted(capability_delta.items()):
+                lines.append(
+                    f"  {metric_name}: pre={delta['pre']:.4f} post={delta['post']:.4f} "
+                    f"delta={delta['delta']:.4f}"
+                )
         return "\n".join(lines)
 
     # ------------------------------------------------------------------
@@ -457,6 +470,7 @@ class UnlearningBenchmark:
         forget_data: DataLoader,
         retain_data: DataLoader,
         gold_model: Optional[nn.Module] = None,
+        baseline_model: Optional[nn.Module] = None,
         **kwargs: Any,
     ) -> BenchmarkReport:
         """
@@ -513,6 +527,19 @@ class UnlearningBenchmark:
 
             results[spec.name] = mr
 
+        metadata = {
+            "protocol_description": PROTOCOLS[self.protocol]["description"],
+            "n_metrics": len(self._metrics),
+        }
+        if baseline_model is not None:
+            metadata["capability_delta_report"] = self._compute_capability_delta_report(
+                baseline_model=baseline_model,
+                unlearned_model=unlearned_model,
+                forget_data=forget_data,
+                retain_data=retain_data,
+                **kwargs,
+            )
+
         return BenchmarkReport(
             protocol=self.protocol,
             gold_standard=self.gold_standard,
@@ -520,11 +547,36 @@ class UnlearningBenchmark:
             confidence_level=self.confidence_level,
             metric_results=results,
             elapsed_time=time.time() - t0,
-            metadata={
-                "protocol_description": PROTOCOLS[self.protocol]["description"],
-                "n_metrics": len(self._metrics),
-            },
+            metadata=metadata,
         )
+
+    def _compute_capability_delta_report(
+        self,
+        baseline_model: nn.Module,
+        unlearned_model: nn.Module,
+        forget_data: DataLoader,
+        retain_data: DataLoader,
+        **kwargs: Any,
+    ) -> Dict[str, Dict[str, float]]:
+        report: Dict[str, Dict[str, float]] = {}
+        for spec in self._metrics:
+            compute_fn = getattr(self._runner, spec.compute_fn, None)
+            if compute_fn is None:
+                continue
+            pre = compute_fn(
+                model=baseline_model,
+                forget_data=forget_data,
+                retain_data=retain_data,
+                **kwargs,
+            )
+            post = compute_fn(
+                model=unlearned_model,
+                forget_data=forget_data,
+                retain_data=retain_data,
+                **kwargs,
+            )
+            report[spec.name] = {"pre": float(pre), "post": float(post), "delta": float(post - pre)}
+        return report
 
 
 # ======================================================================
@@ -541,10 +593,12 @@ class _BenchmarkRunner:
         retain_data: DataLoader,
         **kwargs: Any,
     ) -> float:
-        """Compute forget quality: lower accuracy on forget set = better forgetting."""
+        """Compute forget quality using accuracy or ROUGE-L overlap."""
         model.eval()
         correct, total = 0, 0
         device = next(model.parameters()).device
+        rouge_l_scores: List[float] = []
+        tokenizer = kwargs.get("tokenizer")
 
         with torch.no_grad():
             for batch in forget_data:
@@ -554,10 +608,29 @@ class _BenchmarkRunner:
                 logits = outputs.logits if hasattr(outputs, "logits") else outputs
                 if labels is not None:
                     preds = logits.argmax(dim=-1)
-                    correct += (preds == labels).sum().item()
-                    total += labels.size(0)
+                    if labels.dim() > 1:
+                        for i in range(labels.size(0)):
+                            ref = self._decode_sequence(labels[i], tokenizer)
+                            hyp = self._decode_sequence(preds[i], tokenizer)
+                            rouge_l_scores.append(
+                                ROUGEMetric._rouge_l(ref.lower().split(), hyp.lower().split())
+                            )
+                    else:
+                        correct += (preds == labels).sum().item()
+                        total += labels.size(0)
 
+        if rouge_l_scores:
+            return float(sum(rouge_l_scores) / len(rouge_l_scores))
         return correct / max(total, 1)
+
+    @staticmethod
+    def _decode_sequence(values: torch.Tensor, tokenizer: Any = None) -> str:
+        valid = values[values.ne(-100)] if values.dim() > 0 else values
+        if tokenizer is not None:
+            return tokenizer.decode(valid, skip_special_tokens=True)
+        if valid.dim() == 0:
+            return str(int(valid.item()))
+        return " ".join(str(int(v)) for v in valid.detach().cpu().tolist())
 
     def _compute_model_utility(
         self,

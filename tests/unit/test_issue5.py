@@ -553,6 +553,23 @@ class TestUnlearningBenchmark:
         assert "Protocol: tofu" in summary
         assert "Verdict:" in summary
 
+    def test_capability_delta_report(self):
+        from erasus.evaluation.benchmark_protocol import UnlearningBenchmark
+
+        baseline_model = _tiny_model()
+        unlearned_model = _tiny_model()
+        benchmark = UnlearningBenchmark(protocol="general", n_runs=1)
+        report = benchmark.evaluate(
+            unlearned_model=unlearned_model,
+            baseline_model=baseline_model,
+            forget_data=_loader(32, 8),
+            retain_data=_loader(64, 8),
+        )
+
+        assert "capability_delta_report" in report.metadata
+        assert "model_utility" in report.metadata["capability_delta_report"]
+        assert "delta" in report.metadata["capability_delta_report"]["model_utility"]
+
     def test_metric_result_confidence_interval(self):
         from erasus.evaluation.benchmark_protocol import MetricResult
 

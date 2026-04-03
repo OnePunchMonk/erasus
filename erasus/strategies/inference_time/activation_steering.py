@@ -19,8 +19,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from erasus.core.base_strategy import BaseStrategy
 from erasus.core.registry import strategy_registry
+from erasus.strategies.inference_time.base import BaseInferenceTimeStrategy
 
 
 class ActivationSteeringHook:
@@ -73,7 +73,7 @@ class ActivationSteeringHook:
 
 
 @strategy_registry.register("activation_steering")
-class ActivationSteeringStrategy(BaseStrategy):
+class ActivationSteeringStrategy(BaseInferenceTimeStrategy):
     """
     Unlearning via activation steering.
 

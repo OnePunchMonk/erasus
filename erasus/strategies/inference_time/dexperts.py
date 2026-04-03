@@ -1,25 +1,10 @@
 """
-DExperts — Inference-time unlearning via expert/anti-expert ensembling.
+DExperts — Inference-time unlearning via token-level expert ensembling.
 
-Paper: "DExperts: Decoding-Time Controlled Text Generation with
-Experts and Anti-Experts" (Liu et al., ACL 2021), adapted for
-machine unlearning (2024).
-
-DExperts requires no gradient computation on the base model.
-Instead it:
-
-1. Fine-tunes a small "anti-expert" model on the forget set
-   (this is the only training that happens).
-2. At inference time, combines three models:
-       logits = logits_base + α · (logits_expert - logits_anti)
-   where logits_expert = logits_base (base is its own expert)
-   and logits_anti is the anti-expert's output.
-
-The effect: tokens strongly predicted by the anti-expert (forget
-content) are suppressed; everything else is unchanged.
-
-``unlearn()`` returns a ``DExpertsWrapper`` — an ``nn.Module``
-whose ``forward()`` implements the ensemble computation.
+This implementation performs pure decoding-time ensembling and never
+updates the base model's weights. The expert defaults to the base model,
+while the anti-expert can be provided explicitly or defaults to a frozen
+copy of the base model.
 """
 
 from __future__ import annotations
@@ -29,19 +14,18 @@ from typing import Any, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from erasus.core.base_strategy import BaseStrategy
 from erasus.core.registry import strategy_registry
+from erasus.strategies.inference_time.base import BaseInferenceTimeStrategy
 
 
 class DExpertsWrapper(nn.Module):
     """
-    Wraps a base model and an anti-expert to compute ensemble logits.
+    Token-level expert/anti-expert ensemble wrapper.
 
-    forward() returns adjusted logits:
-        logits_base + alpha * (logits_base - logits_anti)
+    Combines logits as:
+        base + alpha * (expert - anti_expert)
     """
 
     def __init__(
@@ -49,9 +33,11 @@ class DExpertsWrapper(nn.Module):
         base_model: nn.Module,
         anti_expert: nn.Module,
         alpha: float = 1.0,
+        expert_model: Optional[nn.Module] = None,
     ) -> None:
         super().__init__()
         self.base_model = base_model
+        self.expert_model = expert_model or base_model
         self.anti_expert = anti_expert
         self.alpha = alpha
 
@@ -60,15 +46,15 @@ class DExpertsWrapper(nn.Module):
         base_logits = base_out.logits if hasattr(base_out, "logits") else base_out
 
         with torch.no_grad():
+            expert_out = self.expert_model(*args, **kwargs)
+            expert_logits = expert_out.logits if hasattr(expert_out, "logits") else expert_out
             anti_out = self.anti_expert(*args, **kwargs)
             anti_logits = anti_out.logits if hasattr(anti_out, "logits") else anti_out
 
-        # Suppress anti-expert tokens
-        adjusted = base_logits + self.alpha * (base_logits - anti_logits)
+        adjusted = base_logits + self.alpha * (expert_logits - anti_logits)
         return adjusted
 
     def __getattr__(self, name: str) -> Any:
-        """Proxy attribute access to base model for compatibility."""
         try:
             return super().__getattr__(name)
         except AttributeError:
@@ -76,34 +62,35 @@ class DExpertsWrapper(nn.Module):
 
 
 @strategy_registry.register("dexperts")
-class DExpertsStrategy(BaseStrategy):
+class DExpertsStrategy(BaseInferenceTimeStrategy):
     """
-    Inference-time unlearning via expert/anti-expert ensembling.
-
-    Does not modify the base model weights.  Trains an anti-expert on
-    the forget set, then returns a ``DExpertsWrapper`` that combines
-    them at inference time.
+    Inference-time unlearning without weight modification.
 
     Parameters
     ----------
     alpha : float
-        Suppression strength (default 1.0).  Higher values more
-        aggressively suppress forget-set tokens.
-    anti_expert_lr : float
-        Learning rate for fine-tuning the anti-expert (default 1e-4).
-    anti_expert_epochs : int
-        Epochs to train the anti-expert (default 3).
+        Strength of anti-expert suppression.
+    anti_expert_model : nn.Module, optional
+        Frozen anti-expert model. If omitted, a frozen copy of the base
+        model is used, which keeps the operation side-effect free.
+    expert_model : nn.Module, optional
+        Expert model to reinforce non-forget behavior. Defaults to the
+        base model.
     """
 
     def __init__(
         self,
         alpha: float = 1.0,
+        anti_expert_model: Optional[nn.Module] = None,
+        expert_model: Optional[nn.Module] = None,
         anti_expert_lr: float = 1e-4,
         anti_expert_epochs: int = 3,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.alpha = alpha
+        self.anti_expert_model = anti_expert_model
+        self.expert_model = expert_model
         self.anti_expert_lr = anti_expert_lr
         self.anti_expert_epochs = anti_expert_epochs
 
@@ -115,47 +102,24 @@ class DExpertsStrategy(BaseStrategy):
         epochs: int = 3,
         **kwargs: Any,
     ) -> Tuple[nn.Module, List[float], List[float]]:
+        del forget_loader, retain_loader, epochs
+
         device = next(model.parameters()).device
-
-        # Build anti-expert: fine-tune a copy on forget set
-        anti_expert = copy.deepcopy(model).to(device)
-        anti_expert.train()
-        optimizer = torch.optim.Adam(anti_expert.parameters(), lr=self.anti_expert_lr)
-        criterion = nn.CrossEntropyLoss()
-
-        anti_losses: List[float] = []
-        n_epochs = max(epochs, self.anti_expert_epochs)
-
-        for epoch in range(n_epochs):
-            epoch_loss = 0.0
-            n = 0
-            for batch in forget_loader:
-                if not isinstance(batch, (list, tuple)) or len(batch) < 2:
-                    continue
-                inputs, labels = batch[0].to(device), batch[1].to(device)
-
-                optimizer.zero_grad()
-                out = anti_expert(inputs)
-                logits = out.logits if hasattr(out, "logits") else out
-                loss = criterion(logits, labels)
-                loss.backward()
-                optimizer.step()
-
-                epoch_loss += loss.item()
-                n += 1
-
-            anti_losses.append(epoch_loss / max(n, 1))
+        anti_expert = self.anti_expert_model
+        if anti_expert is None:
+            anti_expert = copy.deepcopy(model).to(device)
 
         anti_expert.eval()
-        for p in anti_expert.parameters():
-            p.requires_grad = False
+        for param in anti_expert.parameters():
+            param.requires_grad = False
 
-        # Return a wrapper — base model weights are NOT modified
+        expert_model = self.expert_model or model
+        expert_model.eval()
+
         wrapper = DExpertsWrapper(
             base_model=model,
+            expert_model=expert_model,
             anti_expert=anti_expert,
             alpha=self.alpha,
         )
-
-        # Return lists consistent with BaseStrategy contract
-        return wrapper, anti_losses, []
+        return wrapper, [], []

@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from erasus.core.base_strategy import BaseStrategy
 from erasus.core.registry import strategy_registry
+from erasus.strategies.inference_time.base import BaseInferenceTimeStrategy
 from erasus.strategies.llm_specific.npo import NPOStrategy
 from erasus.strategies.llm_specific.simnpo import SimNPOStrategy
 from erasus.strategies.llm_specific.altpo import AltPOStrategy
@@ -432,10 +433,11 @@ class TestDExpertsStrategy:
         assert "dexperts" in strategy_registry._registry
         strategy_cls = strategy_registry.get("dexperts")
         assert issubclass(strategy_cls, DExpertsStrategy)
+        assert issubclass(strategy_cls, BaseInferenceTimeStrategy)
 
     def test_strategy_unlearn(self, tiny_classifier, forget_loader):
         """Test DExpertsStrategy unlearning."""
-        strategy = DExpertsStrategy(alpha=1.0, anti_expert_lr=1e-3, anti_expert_epochs=2)
+        strategy = DExpertsStrategy(alpha=1.0)
         model = tiny_classifier.eval()
 
         unlearned_wrapper, anti_losses, _ = strategy.unlearn(
@@ -446,8 +448,11 @@ class TestDExpertsStrategy:
 
         # DExpertsStrategy returns a wrapper, not a modified model
         assert isinstance(unlearned_wrapper, DExpertsWrapper)
-        assert len(anti_losses) == 2
-        assert all(isinstance(l, float) for l in anti_losses)
+        assert len(anti_losses) == 0
+
+    def test_requires_training_false(self):
+        strategy = DExpertsStrategy()
+        assert strategy.requires_training is False
 
     def test_no_weight_modification(self, tiny_classifier, forget_loader):
         """Test that base model weights are not modified."""

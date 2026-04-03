@@ -4,11 +4,13 @@ erasus.metrics.forgetting.mia_variants — Advanced MIA variants.
 Includes:
 - LiRA (Likelihood Ratio Attack) — Carlini et al., 2022
 - Label-Only MIA — Choquette-Choo et al., 2021
+- ZLib MIA — loss normalised by zlib compression ratio
 - Min-K% Prob — average log-probability of the K% lowest-probability tokens
 """
 
 from __future__ import annotations
 
+import zlib
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -198,6 +200,68 @@ class LabelOnlyMIAMetric(BaseMetric):
                 correct += (preds == targets).sum().item()
                 total += targets.size(0)
         return correct / max(total, 1)
+
+
+class ZLibMIAMetric(BaseMetric):
+    """
+    ZLib-normalised membership inference attack.
+
+    Uses per-sample loss divided by compressed input length to reduce the
+    bias toward naturally low-entropy samples.
+    """
+
+    name = "zlib_mia"
+
+    def compute(
+        self,
+        model: nn.Module,
+        forget_data: DataLoader,
+        retain_data: DataLoader,
+        **kwargs: Any,
+    ) -> Dict[str, float]:
+        device = next(model.parameters()).device
+        model.eval()
+
+        forget_scores = self._collect_scores(model, forget_data, device)
+        retain_scores = self._collect_scores(model, retain_data, device)
+        labels = np.concatenate([np.ones(len(forget_scores)), np.zeros(len(retain_scores))])
+        scores = np.concatenate([forget_scores, retain_scores])
+
+        return {
+            "zlib_mia_forget_mean": float(np.mean(forget_scores)) if len(forget_scores) else 0.0,
+            "zlib_mia_retain_mean": float(np.mean(retain_scores)) if len(retain_scores) else 0.0,
+            "zlib_mia_auc": float(LiRAMetric._simple_auc(labels, scores)),
+        }
+
+    def _collect_scores(
+        self,
+        model: nn.Module,
+        loader: DataLoader,
+        device: torch.device,
+    ) -> np.ndarray:
+        criterion = nn.CrossEntropyLoss(reduction="none")
+        collected: List[np.ndarray] = []
+
+        with torch.no_grad():
+            for batch in loader:
+                if not isinstance(batch, (list, tuple)) or len(batch) < 2:
+                    continue
+
+                inputs, targets = batch[0].to(device), batch[1].to(device)
+                outputs = model(inputs)
+                logits = outputs.logits if hasattr(outputs, "logits") else outputs
+                losses = criterion(logits, targets).cpu().numpy()
+
+                z_lengths: List[float] = []
+                raw_inputs = batch[0].detach().cpu()
+                for sample in raw_inputs:
+                    compressed = len(zlib.compress(sample.numpy().tobytes()))
+                    z_lengths.append(float(max(compressed, 1)))
+
+                z_arr = np.array(z_lengths, dtype=np.float64)
+                collected.append(-(losses / z_arr))
+
+        return np.concatenate(collected) if collected else np.array([])
 
 
 class MinKProbMetric(BaseMetric):

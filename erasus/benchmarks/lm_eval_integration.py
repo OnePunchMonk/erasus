@@ -294,6 +294,39 @@ class LMEvalBenchmark:
         return all_results
 
 
+class PostUnlearningBenchmarkSuite:
+    """
+    Standard post-unlearning benchmark wrapper for common LLM tasks.
+
+    Provides a single entry point for evaluating utility preservation on
+    MMLU, GSM8K, TruthfulQA, HellaSwag, and ARC after unlearning.
+    """
+
+    DEFAULT_TASKS = ["mmlu", "gsm8k", "truthfulqa", "hellaswag", "arc"]
+
+    def __init__(
+        self,
+        model: nn.Module,
+        tokenizer: Any,
+        device: str = "cpu",
+    ) -> None:
+        self.benchmark = LMEvalBenchmark(model, tokenizer, device=device)
+
+    def run(
+        self,
+        tasks: Optional[List[str]] = None,
+        num_fewshot: int = 0,
+        limit: Optional[int] = None,
+    ) -> Dict[str, Dict[str, float]]:
+        """Run the default post-unlearning benchmark suite."""
+        selected_tasks = tasks or list(self.DEFAULT_TASKS)
+        return self.benchmark.run_benchmark_suite(
+            tasks=selected_tasks,
+            num_fewshot=num_fewshot,
+            limit=limit,
+        )
+
+
 class BenchmarkComparison:
     """
     Compare model performance before/after unlearning.
