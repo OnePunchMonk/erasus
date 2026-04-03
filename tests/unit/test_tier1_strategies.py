@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from erasus.core.registry import strategy_registry
 from erasus.strategies.llm_specific.undial import UNDIALStrategy
-from erasus.strategies.gradient_methods.weighted_gradient_ascent import WGAStrategy
+from erasus.strategies.gradient_methods.weighted_gradient_ascent import FPGAStrategy, WGAStrategy
 from erasus.strategies.diffusion_specific.meta_unlearning import MetaUnlearningStrategy
 
 
@@ -164,6 +164,9 @@ class TestWGAStrategy:
         assert "wga" in strategy_registry._registry
         strategy_cls = strategy_registry.get("wga")
         assert issubclass(strategy_cls, WGAStrategy)
+        assert "fpga" in strategy_registry._registry
+        fpga_cls = strategy_registry.get("fpga")
+        assert issubclass(fpga_cls, FPGAStrategy)
 
     def test_unlearn_uniform(self, tiny_classifier, forget_loader):
         """Test unlearning with uniform weighting (like standard GA)."""
@@ -207,6 +210,10 @@ class TestWGAStrategy:
 
         assert isinstance(unlearned_model, nn.Module)
         assert len(forget_losses) == 1
+
+    def test_fpga_init(self):
+        strategy = FPGAStrategy()
+        assert strategy.token_weighted is True
 
     def test_invalid_weighting(self):
         """Test that invalid weighting strategy raises error."""

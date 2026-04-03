@@ -14,12 +14,18 @@ from erasus.metrics.retrieval_metrics import ZeroShotAccuracyMetric
 # New metric modules
 from erasus.metrics.metric_suite import MetricSuite
 from erasus.metrics.forgetting.mia import MIAMetric
-from erasus.metrics.forgetting.mia_variants import LiRAMetric, LabelOnlyMIAMetric
+from erasus.metrics.forgetting.mia_variants import (
+    LabelOnlyMIAMetric,
+    LiRAMetric,
+    MinKProbMetric,
+    ZLibMIAMetric,
+)
 from erasus.metrics.forgetting.confidence import ConfidenceMetric
 from erasus.metrics.forgetting.feature_distance import FeatureDistanceMetric
 from erasus.metrics.efficiency.time_complexity import TimeComplexityMetric
 from erasus.metrics.efficiency.memory_usage import MemoryUsageMetric
 from erasus.metrics.privacy.differential_privacy import DPEvaluationMetric
+from erasus.metrics.privacy.privacy_leakage import PrivacyLeakageMetric
 
 # Sprint A metrics
 from erasus.metrics.forgetting.activation_analysis import ActivationAnalysis
@@ -62,11 +68,14 @@ for name, cls in [
     ("mia_full", MIAMetric),
     ("lira", LiRAMetric),
     ("label_only_mia", LabelOnlyMIAMetric),
+    ("zlib_mia", ZLibMIAMetric),
+    ("mink", MinKProbMetric),
     ("confidence", ConfidenceMetric),
     ("feature_distance", FeatureDistanceMetric),
     ("time_complexity", TimeComplexityMetric),
     ("memory_usage", MemoryUsageMetric),
     ("dp_evaluation", DPEvaluationMetric),
+    ("privacy_leakage", PrivacyLeakageMetric),
     ("mia_suite", MIASuite),
     ("extraction_strength", ExtractionStrengthMetric),
     ("exact_memorization", ExactMemorizationMetric),
@@ -89,11 +98,14 @@ __all__ = [
     "MIAMetric",
     "LiRAMetric",
     "LabelOnlyMIAMetric",
+    "ZLibMIAMetric",
+    "MinKProbMetric",
     "ConfidenceMetric",
     "FeatureDistanceMetric",
     "TimeComplexityMetric",
     "MemoryUsageMetric",
     "DPEvaluationMetric",
+    "PrivacyLeakageMetric",
     # Sprint A
     "ActivationAnalysis",
     "BackdoorActivation",
