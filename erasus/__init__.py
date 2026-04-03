@@ -1,6 +1,7 @@
 """
-ERASUS — Efficient Representative And Surgical Unlearning Selection
-Universal Machine Unlearning via Coreset Selection
+ERASUS — Efficient Representative And Surgical Unlearning Selection.
+
+Universal Machine Unlearning via Coreset Selection.
 
 A unified, modality-agnostic framework for machine unlearning across
 Vision-Language Models, Large Language Models, Diffusion Models,
@@ -19,13 +20,12 @@ Modality-specific unlearners::
     from erasus.unlearners import MultimodalUnlearner  # auto-detect
 """
 
+from __future__ import annotations
+
+from importlib import import_module
+from typing import Any
+
 from erasus.version import __version__
-from erasus.unlearners.erasus_unlearner import ErasusUnlearner
-from erasus.unlearners.multimodal_unlearner import MultimodalUnlearner
-from erasus.core.coreset import Coreset
-from erasus.core.unlearning_module import UnlearningModule
-from erasus.core.unlearning_trainer import UnlearningTrainer
-from erasus.core.strategy_pipeline import StrategyPipeline
 
 __all__ = [
     "__version__",
@@ -36,3 +36,28 @@ __all__ = [
     "UnlearningTrainer",
     "StrategyPipeline",
 ]
+
+_EXPORTS = {
+    "ErasusUnlearner": ("erasus.unlearners.erasus_unlearner", "ErasusUnlearner"),
+    "MultimodalUnlearner": ("erasus.unlearners.multimodal_unlearner", "MultimodalUnlearner"),
+    "Coreset": ("erasus.core.coreset", "Coreset"),
+    "UnlearningModule": ("erasus.core.unlearning_module", "UnlearningModule"),
+    "UnlearningTrainer": ("erasus.core.unlearning_trainer", "UnlearningTrainer"),
+    "StrategyPipeline": ("erasus.core.strategy_pipeline", "StrategyPipeline"),
+}
+
+
+def __getattr__(name: str) -> Any:
+    """Lazily resolve top-level exports to keep ``import erasus`` lightweight."""
+    if name not in _EXPORTS:
+        raise AttributeError(f"module 'erasus' has no attribute '{name}'")
+
+    module_name, attr_name = _EXPORTS[name]
+    value = getattr(import_module(module_name), attr_name)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    """Expose lazy exports in interactive environments."""
+    return sorted(set(globals()) | set(__all__))
