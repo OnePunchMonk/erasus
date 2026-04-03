@@ -119,6 +119,11 @@ class TestIntegrationsPackage:
         from erasus.integrations import HuggingFaceHub
         assert HuggingFaceHub is not None
 
+    def test_package_dir_lists_lazy_export(self):
+        import erasus.integrations as integrations
+
+        assert "HuggingFaceHub" in dir(integrations)
+
     def test_class_has_expected_methods(self):
         from erasus.integrations import HuggingFaceHub
         hub = HuggingFaceHub()
@@ -129,6 +134,22 @@ class TestIntegrationsPackage:
         assert hasattr(hub, "load_dataset")
         assert hasattr(hub, "dataset_to_dataloader")
         assert hasattr(hub, "list_erasus_models")
+
+
+class TestTopLevelPackage:
+    """Test lazy top-level exports."""
+
+    def test_top_level_import(self):
+        import erasus
+
+        assert erasus.ErasusUnlearner is not None
+        assert erasus.MultimodalUnlearner is not None
+
+    def test_top_level_dir_lists_lazy_exports(self):
+        import erasus
+
+        assert "ErasusUnlearner" in dir(erasus)
+        assert "StrategyPipeline" in dir(erasus)
 
 
 class TestCheckpointPush:
