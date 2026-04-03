@@ -11,6 +11,7 @@ from erasus.strategies.gradient_methods.scrub import SCRUBStrategy
 from erasus.strategies.gradient_methods.fisher_forgetting import FisherForgettingStrategy
 from erasus.strategies.gradient_methods.negative_gradient import NegativeGradientStrategy
 from erasus.strategies.gradient_methods.weighted_gradient_ascent import WGAStrategy
+from erasus.strategies.gradient_methods.weighted_gradient_ascent import FPGAStrategy
 
 # Parameter methods
 from erasus.strategies.parameter_methods.lora_unlearning import LoRAUnlearningStrategy
@@ -84,6 +85,7 @@ __all__ = [
     "FisherForgettingStrategy",
     "NegativeGradientStrategy",
     "WGAStrategy",
+    "FPGAStrategy",
     "SaliencyUnlearningStrategy",
     "LoRAUnlearningStrategy",
     "EfficientLoRAStrategy",

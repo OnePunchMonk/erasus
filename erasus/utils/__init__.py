@@ -1,5 +1,6 @@
 """erasus.utils — Utility functions and helpers."""
 
+from erasus.utils.decorators import experimental
 from erasus.utils.helpers import (
     count_parameters,
     model_size_mb,
@@ -32,6 +33,8 @@ from erasus.utils.profiling import UnlearningProfiler, profile_section, profile_
 from erasus.utils.reproducibility import make_reproducible, ExperimentSnapshot
 
 __all__ = [
+    # decorators
+    "experimental",
     # helpers
     "count_parameters",
     "model_size_mb",
