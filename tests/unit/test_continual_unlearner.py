@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
+from erasus.core.exceptions import SelectorError
 from erasus.unlearners.continual_unlearner import (
     ContinualUnlearner,
     DeletionRequest,
@@ -264,6 +265,23 @@ class TestContinualUnlearnerProcessing:
 
 class TestContinualUnlearnerHelpers:
     """Test internal helper methods."""
+
+    def test_selector_failure_raises_error(self, tiny_classifier, retention_loader):
+        """Test selector failures are surfaced instead of silently bypassed."""
+
+        class BrokenSelector:
+            def select(self, *args, **kwargs):
+                raise RuntimeError("selector exploded")
+
+        unlearner = ContinualUnlearner(model=tiny_classifier, base_epochs=1)
+        unlearner.selector = BrokenSelector()
+        unlearner.selector_name = "broken"
+
+        with pytest.raises(SelectorError, match="Silent fallback is disabled"):
+            unlearner.process_deletion_requests(
+                deletion_requests=[create_deletion_request("req_1", num_samples=16)],
+                retain_loader=retention_loader,
+            )
 
     def test_measure_utility(self, tiny_classifier, retention_loader):
         """Test utility measurement on retain set."""

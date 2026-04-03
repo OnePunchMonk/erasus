@@ -25,9 +25,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 
 from erasus.core.base_unlearner import BaseUnlearner, UnlearningResult
+from erasus.core.exceptions import SelectorError
 from erasus.core.registry import strategy_registry, selector_registry
 
 # Ensure strategies are registered
@@ -280,18 +281,35 @@ class ContinualUnlearner(BaseUnlearner):
             return forget_loader
 
         # Apply selector to this specific deletion request
-        # (Selectors typically work with DataLoaders directly)
         try:
-            selected_loader = self.selector.select(
+            num_samples = len(forget_loader.dataset)
+            k = max(1, int(num_samples * prune_ratio))
+            selected = self.selector.select(
                 model=self.model,
-                forget_loader=forget_loader,
+                data_loader=forget_loader,
+                k=k,
                 retain_loader=retain_loader,
                 prune_ratio=prune_ratio,
             )
-            return selected_loader
-        except Exception:
-            # If selector fails, fall back to full forget loader
-            return forget_loader
+
+            if isinstance(selected, DataLoader):
+                return selected
+
+            subset = Subset(forget_loader.dataset, list(selected))
+            return DataLoader(
+                subset,
+                batch_size=forget_loader.batch_size,
+                shuffle=False,
+                num_workers=forget_loader.num_workers,
+                collate_fn=forget_loader.collate_fn,
+                pin_memory=forget_loader.pin_memory,
+                drop_last=forget_loader.drop_last,
+            )
+        except Exception as exc:
+            raise SelectorError(
+                f"Selector failed for deletion request '{request_id}'. "
+                "Silent fallback is disabled; fix the selector inputs or use a different selector."
+            ) from exc
 
     def _measure_utility(self, retain_loader: DataLoader) -> float:
         """
