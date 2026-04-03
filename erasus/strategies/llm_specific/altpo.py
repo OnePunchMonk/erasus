@@ -75,7 +75,16 @@ class AltPOStrategy(BaseStrategy):
         self.retain_weight = retain_weight
         self.lr = lr
         self.alt_strategy = alt_strategy
-        self._reference_model = reference_model
+        self.reference_model = reference_model
+
+    def preference_loss(
+        self,
+        alt_log_probs: torch.Tensor,
+        true_log_probs: torch.Tensor,
+    ) -> torch.Tensor:
+        """Compute the AltPO preference objective."""
+        gap = alt_log_probs - true_log_probs
+        return -F.logsigmoid(self.beta * gap).mean()
 
     def unlearn(
         self,
@@ -88,7 +97,7 @@ class AltPOStrategy(BaseStrategy):
         device = next(model.parameters()).device
 
         # Frozen reference for retain KL
-        ref_model = self._reference_model
+        ref_model = self.reference_model
         if ref_model is None:
             ref_model = copy.deepcopy(model).to(device)
         ref_model = ref_model.to(device)
@@ -126,9 +135,8 @@ class AltPOStrategy(BaseStrategy):
                 # Log-prob of the ALTERNATIVE label
                 alt_lp = self._alt_log_prob(log_probs, labels, n_classes)
 
-                # AltPO loss: prefer alt over true
-                gap = alt_lp - true_lp   # positive when model already prefers alt
-                loss = -F.logsigmoid(self.beta * gap).mean()
+                # AltPO loss: prefer alt over true.
+                loss = self.preference_loss(alt_lp, true_lp)
 
                 optimizer.zero_grad()
                 loss.backward()

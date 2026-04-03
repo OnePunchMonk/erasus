@@ -53,6 +53,11 @@ def main() -> None:
     add_visualize_args(visualize_parser)
     visualize_parser.set_defaults(func=run_visualize)
 
+    from erasus.cli.service import add_service_args, run_service
+    service_parser = subparsers.add_parser("service", help="Run the FastAPI service.")
+    add_service_args(service_parser)
+    service_parser.set_defaults(func=run_service)
+
     # Legacy --config support (redirect to unlearn)
     parser.add_argument(
         "--config", "-c", type=str, default=None,

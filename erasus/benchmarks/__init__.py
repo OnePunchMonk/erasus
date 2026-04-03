@@ -28,18 +28,42 @@ from erasus.benchmarks.real_model_eval import (
     RealModelBenchmark,
     RealModelComparison,
 )
+from erasus.benchmarks.standard_suite import (
+    BenchmarkSuiteEntry,
+    BenchmarkSuiteReport,
+    StandardBenchmarkSuite,
+)
+from erasus.benchmarks.temporal import (
+    TemporalBenchmarkRecord,
+    TemporalUnlearningBenchmark,
+)
 
-__all__ = [
+STABLE_EXPORTS = [
     "TOFUDataset",
     "TOFULoader",
     "TOFUEvaluator",
     "LMEvalWrapper",
     "LMEvalBenchmark",
-    "BenchmarkComparison",
-    "PostUnlearningBenchmarkSuite",
     "BenchmarkRunner",
     "BenchmarkResult",
+]
+
+EXPERIMENTAL_EXPORTS = [
+    "BenchmarkComparison",
+    "PostUnlearningBenchmarkSuite",
     "HuggingFaceModelLoader",
     "RealModelBenchmark",
     "RealModelComparison",
+    "BenchmarkSuiteEntry",
+    "BenchmarkSuiteReport",
+    "StandardBenchmarkSuite",
+    "TemporalBenchmarkRecord",
+    "TemporalUnlearningBenchmark",
 ]
+
+PUBLIC_API_STATUS = {
+    **{name: "stable" for name in STABLE_EXPORTS},
+    **{name: "experimental" for name in EXPERIMENTAL_EXPORTS},
+}
+
+__all__ = STABLE_EXPORTS + EXPERIMENTAL_EXPORTS

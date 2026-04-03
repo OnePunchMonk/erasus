@@ -36,6 +36,8 @@ class ErasusConfig:
     # Logging
     log_dir: Optional[str] = None
     wandb_project: Optional[str] = None
+    forget_data_dir: Optional[str] = None
+    retain_data_dir: Optional[str] = None
 
     @classmethod
     def from_yaml(cls, path: str) -> "ErasusConfig":

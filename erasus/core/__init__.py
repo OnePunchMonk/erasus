@@ -22,7 +22,7 @@ from erasus.core.exceptions import (
     ConfigurationError,
 )
 
-__all__ = [
+STABLE_EXPORTS = [
     "BaseUnlearner",
     "UnlearningResult",
     "BaseSelector",
@@ -32,13 +32,23 @@ __all__ = [
     "ErasusConfig",
     "Coreset",
     "CoresetMetadata",
-    "UnlearningModule",
-    "UnlearningTrainer",
-    "TrainerResult",
-    "StrategyPipeline",
     "ErasusError",
     "ModelNotFoundError",
     "StrategyError",
     "SelectorError",
     "ConfigurationError",
 ]
+
+EXPERIMENTAL_EXPORTS = [
+    "UnlearningModule",
+    "UnlearningTrainer",
+    "TrainerResult",
+    "StrategyPipeline",
+]
+
+PUBLIC_API_STATUS = {
+    **{name: "stable" for name in STABLE_EXPORTS},
+    **{name: "experimental" for name in EXPERIMENTAL_EXPORTS},
+}
+
+__all__ = STABLE_EXPORTS + EXPERIMENTAL_EXPORTS

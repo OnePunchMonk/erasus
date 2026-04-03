@@ -50,6 +50,7 @@ from erasus.strategies.gradient_methods.saliency_unlearning import SaliencyUnlea
 
 # New parameter methods
 from erasus.strategies.parameter_methods.layer_freezing import LayerFreezingStrategy
+from erasus.strategies.parameter_methods.parameter_subset import ParameterSubsetUnlearningStrategy
 
 # New data methods
 from erasus.strategies.data_methods.knowledge_distillation import KnowledgeDistillationStrategy
@@ -78,7 +79,7 @@ from erasus.strategies.ensemble_strategy import EnsembleStrategy
 # Auto strategy selection
 from erasus.strategies.auto_strategy import AutoStrategy
 
-__all__ = [
+STABLE_EXPORTS = [
     "GradientAscentStrategy",
     "ModalityDecouplingStrategy",
     "SCRUBStrategy",
@@ -94,6 +95,7 @@ __all__ = [
     "MaskBasedUnlearningStrategy",
     "NeuronPruningStrategy",
     "LayerFreezingStrategy",
+    "ParameterSubsetUnlearningStrategy",
     "AmnesiacUnlearningStrategy",
     "SISAStrategy",
     "CertifiedRemovalStrategy",
@@ -104,23 +106,33 @@ __all__ = [
     "CausalTracingStrategy",
     "AttentionSurgeryStrategy",
     "NPOStrategy",
-    "SimNPOStrategy",
     "AltPOStrategy",
-    "FLATStrategy",
     "RMUStrategy",
     "UNDIALStrategy",
-    "DeltaUnlearningStrategy",
-    "DExpertsStrategy",
-    "ActivationSteeringStrategy",
     "ConceptErasureStrategy",
     "NoiseInjectionStrategy",
     "UNetSurgeryStrategy",
-    "TimestepMaskingStrategy",
-    "SafeLatentsStrategy",
-    "MetaUnlearningStrategy",
     "ContrastiveUnlearningStrategy",
     "AttentionUnlearningStrategy",
     "VisionTextSplitStrategy",
     "EnsembleStrategy",
+]
+
+EXPERIMENTAL_EXPORTS = [
+    "SimNPOStrategy",
+    "FLATStrategy",
+    "DeltaUnlearningStrategy",
+    "DExpertsStrategy",
+    "ActivationSteeringStrategy",
+    "TimestepMaskingStrategy",
+    "SafeLatentsStrategy",
+    "MetaUnlearningStrategy",
     "AutoStrategy",
 ]
+
+PUBLIC_API_STATUS = {
+    **{name: "stable" for name in STABLE_EXPORTS},
+    **{name: "experimental" for name in EXPERIMENTAL_EXPORTS},
+}
+
+__all__ = STABLE_EXPORTS + EXPERIMENTAL_EXPORTS

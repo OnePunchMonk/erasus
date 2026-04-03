@@ -153,6 +153,81 @@ class ExperimentTracker:
                 import shutil
                 shutil.copy2(src, dst)
 
+    def log_curve(self, name: str, xs: List[float], ys: List[float]) -> None:
+        """Log a curve such as forget-loss or retain-accuracy over time."""
+        payload = {"name": name, "x": xs, "y": ys}
+        if self.backend == "wandb":
+            import wandb
+
+            table = wandb.Table(data=[[x, y] for x, y in zip(xs, ys)], columns=["x", "y"])
+            wandb.log({name: wandb.plot.line(table, "x", "y", title=name)})
+        elif self.backend == "mlflow":
+            curve_path = self._run_dir / f"{name}_curve.json" if hasattr(self, "_run_dir") else Path(f"{name}_curve.json")
+            curve_path.write_text(json.dumps(payload, indent=2))
+            import mlflow
+
+            mlflow.log_artifact(str(curve_path))
+        else:
+            (self._run_dir / f"{name}_curve.json").write_text(json.dumps(payload, indent=2))
+
+    def log_model_version(
+        self,
+        name: str,
+        path: str,
+        aliases: Optional[List[str]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Log version metadata for an unlearned checkpoint."""
+        payload = {
+            "name": name,
+            "path": path,
+            "aliases": aliases or [],
+            "metadata": metadata or {},
+        }
+        if self.backend == "mlflow":
+            import mlflow
+
+            version_path = self._run_dir / f"{name}_version.json" if hasattr(self, "_run_dir") else Path(f"{name}_version.json")
+            version_path.write_text(json.dumps(payload, indent=2))
+            mlflow.log_artifact(str(version_path))
+        elif self.backend == "wandb":
+            import wandb
+
+            wandb.log({f"{name}_version": payload})
+        else:
+            (self._run_dir / f"{name}_version.json").write_text(json.dumps(payload, indent=2))
+
+    def log_unlearning_run(
+        self,
+        *,
+        strategy: str,
+        selector: Optional[str],
+        metrics: Dict[str, float],
+        curves: Optional[Dict[str, Dict[str, List[float]]]] = None,
+        model_path: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Log a complete unlearning run bundle."""
+        self.log_summary(
+            {
+                "strategy": strategy,
+                "selector": selector or "none",
+                **(metadata or {}),
+            }
+        )
+        self.log_metrics(metrics)
+
+        for name, curve in (curves or {}).items():
+            self.log_curve(name, curve.get("x", []), curve.get("y", []))
+
+        if model_path is not None:
+            self.log_model_version(
+                name="unlearned_model",
+                path=model_path,
+                aliases=[strategy],
+                metadata=metadata,
+            )
+
     def log_model(self, model: Any, name: str = "model") -> None:
         """Save and log a PyTorch model checkpoint."""
         import torch

@@ -65,7 +65,34 @@ class NPOStrategy(BaseStrategy):
         self.beta = beta
         self.retain_weight = retain_weight
         self.lr = lr
-        self._reference_model = reference_model
+        self.reference_model = reference_model
+
+    def dpo_style_loss(
+        self,
+        student_log_probs: torch.Tensor,
+        reference_log_probs: torch.Tensor,
+        labels: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Compute the DPO-style NPO forget loss.
+
+        Parameters
+        ----------
+        student_log_probs : torch.Tensor
+            Student log-probabilities with shape ``(batch, classes)``.
+        reference_log_probs : torch.Tensor
+            Frozen reference log-probabilities with shape ``(batch, classes)``.
+        labels : torch.Tensor
+            Gold labels for the forget batch.
+        """
+        if labels.dim() != 1:
+            raise ValueError("NPO dpo_style_loss expects 1D class labels.")
+
+        idx = labels.unsqueeze(1)
+        student_lp = student_log_probs.gather(1, idx).squeeze(1)
+        ref_lp = reference_log_probs.gather(1, idx).squeeze(1)
+        gap = student_lp - ref_lp
+        return -F.logsigmoid(-self.beta * gap).mean()
 
     def unlearn(
         self,
@@ -78,7 +105,7 @@ class NPOStrategy(BaseStrategy):
         device = next(model.parameters()).device
 
         # Build frozen reference model
-        ref_model = self._reference_model
+        ref_model = self.reference_model
         if ref_model is None:
             ref_model = copy.deepcopy(model).to(device)
         ref_model = ref_model.to(device)
@@ -114,17 +141,12 @@ class NPOStrategy(BaseStrategy):
                     log_p_ref = F.log_softmax(ref_logits, dim=-1)
 
                 if labels.dim() == 1:
-                    # Classification: log-prob of true class
-                    idx = labels.unsqueeze(1)
-                    student_lp = log_p.gather(1, idx).squeeze(1)
-                    ref_lp = log_p_ref.gather(1, idx).squeeze(1)
+                    loss = self.dpo_style_loss(log_p, log_p_ref, labels)
                 else:
                     student_lp = log_p.mean(dim=list(range(1, log_p.dim())))
                     ref_lp = log_p_ref.mean(dim=list(range(1, log_p_ref.dim())))
-
-                # NPO loss: -log σ(-β · (log p_θ - log p_ref))
-                gap = student_lp - ref_lp
-                loss = -F.logsigmoid(-self.beta * gap).mean()
+                    gap = student_lp - ref_lp
+                    loss = -F.logsigmoid(-self.beta * gap).mean()
 
                 optimizer.zero_grad()
                 loss.backward()

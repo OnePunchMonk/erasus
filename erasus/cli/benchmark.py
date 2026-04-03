@@ -23,6 +23,11 @@ from typing import Any
 def add_benchmark_args(parser: argparse.ArgumentParser) -> None:
     """Add benchmark-specific arguments."""
     parser.add_argument(
+        "--suite", type=str, default=None,
+        choices=["standard"],
+        help="Run the unified benchmark suite and emit JSON + Markdown reports.",
+    )
+    parser.add_argument(
         "--benchmark", type=str, default=None,
         choices=["tofu", "wmdp", "custom"],
         help="(Legacy) Benchmark suite to run. Prefer --protocol.",
@@ -49,6 +54,10 @@ def add_benchmark_args(parser: argparse.ArgumentParser) -> None:
         help="Output file for results.",
     )
     parser.add_argument(
+        "--report-md", type=str, default="benchmark_results.md",
+        help="Markdown report path for unified suite runs.",
+    )
+    parser.add_argument(
         "--metrics", type=str, default="accuracy,mia",
         help="Comma-separated metrics to evaluate (used in legacy mode).",
     )
@@ -71,6 +80,15 @@ def add_benchmark_args(parser: argparse.ArgumentParser) -> None:
 
 def run_benchmark(args: argparse.Namespace) -> None:
     """Execute the benchmark."""
+    if args.suite == "standard":
+        from erasus.benchmarks.standard_suite import StandardBenchmarkSuite
+
+        suite = StandardBenchmarkSuite()
+        report = suite.run()
+        suite.save_report(report, args.output, args.report_md)
+        print(report.to_markdown())
+        return
+
     # Resolve protocol: --protocol takes precedence, then --benchmark, then default
     protocol = args.protocol or args.benchmark
 

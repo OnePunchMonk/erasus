@@ -24,11 +24,23 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
     """Register the 'unlearn' sub-command."""
     parser = subparsers.add_parser(
         "unlearn",
-        help="Run an unlearning pipeline from a YAML config.",
+        help="Run an unlearning pipeline from a composed config.",
     )
     parser.add_argument(
-        "--config", "-c", type=str, required=True,
+        "--config", "-c", type=str, default=None,
         help="Path to YAML configuration file.",
+    )
+    parser.add_argument(
+        "--config-dir", type=str, default=None,
+        help="Optional config directory for Hydra-style composition.",
+    )
+    parser.add_argument(
+        "--config-name", type=str, default=None,
+        help="Optional config file name (without extension) for Hydra-style composition.",
+    )
+    parser.add_argument(
+        "--override", action="append", default=[],
+        help="Dotted config override, e.g. strategy.name=npo or selector.prune_ratio=0.2.",
     )
     parser.add_argument(
         "--device", "-d", type=str, default=None,
@@ -136,9 +148,23 @@ def run_unlearn(args: argparse.Namespace) -> None:
     """Execute the unlearning pipeline."""
     from erasus.core.config import ErasusConfig
     from erasus.core.registry import strategy_registry, selector_registry
+    from erasus.experiments.hydra_config import compose_experiment_config
 
     # ---- Load config ----
-    config = ErasusConfig.from_yaml(args.config)
+    config_path = args.config
+    if config_path is None and args.config_name is not None:
+        config_dir = Path(args.config_dir or ".")
+        config_path = str(config_dir / f"{args.config_name}.yaml")
+
+    if config_path is not None or args.override:
+        experiment_config = compose_experiment_config(
+            config_path=config_path,
+            overrides=list(args.override),
+        )
+        config = experiment_config.to_erasus_config()
+    else:
+        config = ErasusConfig()
+
     if args.device:
         config.device = args.device
     if args.epochs:
@@ -280,4 +306,3 @@ def run_unlearn(args: argparse.Namespace) -> None:
     print()
     print("✅ Pipeline complete.")
     print()
-

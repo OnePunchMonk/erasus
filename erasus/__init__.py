@@ -27,15 +27,25 @@ from typing import Any
 
 from erasus.version import __version__
 
-__all__ = [
+STABLE_EXPORTS = [
     "__version__",
     "ErasusUnlearner",
     "MultimodalUnlearner",
     "Coreset",
+]
+
+EXPERIMENTAL_EXPORTS = [
     "UnlearningModule",
     "UnlearningTrainer",
     "StrategyPipeline",
 ]
+
+PUBLIC_API_STATUS = {
+    **{name: "stable" for name in STABLE_EXPORTS},
+    **{name: "experimental" for name in EXPERIMENTAL_EXPORTS},
+}
+
+__all__ = STABLE_EXPORTS + EXPERIMENTAL_EXPORTS
 
 _EXPORTS = {
     "ErasusUnlearner": ("erasus.unlearners.erasus_unlearner", "ErasusUnlearner"),
