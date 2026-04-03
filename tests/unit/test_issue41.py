@@ -311,7 +311,8 @@ class TestCrossPromptLeakageMetric:
 
     def test_leakage_detected_flag_respects_threshold(self):
         metric_strict = CrossPromptLeakageMetric(leakage_threshold=0.01)
-        metric_lenient = CrossPromptLeakageMetric(leakage_threshold=0.99)
+        # Score is clipped to [0, 1]; threshold > 1.0 can never be met → never flagged
+        metric_lenient = CrossPromptLeakageMetric(leakage_threshold=1.01)
 
         class ConfidentModel(nn.Module):
             def forward(self, x):
@@ -327,7 +328,7 @@ class TestCrossPromptLeakageMetric:
         r_strict = metric_strict.compute(model, forget_loader, retain_loader)
         assert r_strict["cross_prompt_leakage_detected"] == 1.0
 
-        # Very high threshold → not detected
+        # Impossibly high threshold (scores are ≤ 1) → not detected
         r_lenient = metric_lenient.compute(model, forget_loader, retain_loader)
         assert r_lenient["cross_prompt_leakage_detected"] == 0.0
 

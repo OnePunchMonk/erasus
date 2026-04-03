@@ -74,7 +74,14 @@ class GradientAscentStrategy(BaseStrategy):
                 with torch.amp.autocast(device_type=device if isinstance(device, str) else device.type, dtype=amp_dtype, enabled=amp_enabled):
                     outputs = model(inputs)
                     logits = outputs.logits if hasattr(outputs, "logits") else outputs
-                    loss = F.cross_entropy(logits, labels)
+                    if logits.dim() == 3:
+                        b, seq, v = logits.shape
+                        loss = F.cross_entropy(
+                            logits.reshape(-1, v),
+                            labels.reshape(-1),
+                        )
+                    else:
+                        loss = F.cross_entropy(logits, labels)
 
                 # MAXIMIZE loss → gradient ascent
                 optimizer.zero_grad()
@@ -97,7 +104,14 @@ class GradientAscentStrategy(BaseStrategy):
                     with torch.amp.autocast(device_type=device if isinstance(device, str) else device.type, dtype=amp_dtype, enabled=amp_enabled):
                         outputs = model(inputs)
                         logits = outputs.logits if hasattr(outputs, "logits") else outputs
-                        loss = F.cross_entropy(logits, labels)
+                        if logits.dim() == 3:
+                            b, seq, v = logits.shape
+                            loss = F.cross_entropy(
+                                logits.reshape(-1, v),
+                                labels.reshape(-1),
+                            )
+                        else:
+                            loss = F.cross_entropy(logits, labels)
 
                     optimizer.zero_grad()
                     scaler.scale(loss).backward()

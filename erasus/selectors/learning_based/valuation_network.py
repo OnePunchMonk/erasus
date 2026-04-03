@@ -19,6 +19,7 @@ from torch.utils.data import DataLoader
 from erasus.core.base_selector import BaseSelector
 from erasus.core.exceptions import SelectorError
 from erasus.core.registry import selector_registry
+from erasus.utils.torch_compat import infer_module_device
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ class ValuationNetworkSelector(BaseSelector):
                 "selector.select(model, loader, k, val_net=my_val_net)"
             )
         
-        device = next(val_net.parameters()).device
+        device = infer_module_device(val_net)
         val_net.eval()
         scores = []
         
