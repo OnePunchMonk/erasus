@@ -56,6 +56,11 @@ class MetricSuite:
     def metric_names(self) -> List[str]:
         return [type(m).__name__ for m in self._instances]
 
+    @property
+    def metrics(self) -> List[Any]:
+        """Instantiated metric objects used by :meth:`run`."""
+        return self._instances
+
     def add(self, metric: Union[str, Any]) -> "MetricSuite":
         """Add a metric to the suite (fluent API)."""
         if isinstance(metric, str):

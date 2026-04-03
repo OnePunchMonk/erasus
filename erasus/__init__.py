@@ -18,6 +18,19 @@ Modality-specific unlearners::
 
     from erasus.unlearners import VLMUnlearner, LLMUnlearner, DiffusionUnlearner
     from erasus.unlearners import MultimodalUnlearner  # auto-detect
+
+Public API stability (package root)
+-----------------------------------
+Exports are split into **stable** (semver-minded; breaking changes only on
+minor/major bumps) and **experimental** (may change without notice).
+
+- ``STABLE_EXPORTS``: names intended for downstream imports.
+- ``EXPERIMENTAL_EXPORTS``: names for early adopters and research code.
+- ``PUBLIC_API_STATUS``: mapping of export name → ``\"stable\"`` or
+  ``\"experimental\"``.
+
+Subpackages (e.g. ``erasus.strategies``, ``erasus.benchmarks``) define their
+own ``PUBLIC_API_STATUS`` for registered classes; see those modules' docs.
 """
 
 from __future__ import annotations

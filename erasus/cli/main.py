@@ -58,6 +58,14 @@ def main() -> None:
     add_service_args(service_parser)
     service_parser.set_defaults(func=run_service)
 
+    from erasus.cli.profile import add_profile_args, run_profile
+    profile_parser = subparsers.add_parser(
+        "profile",
+        help="Time/memory breakdown for selector + unlearning on synthetic data.",
+    )
+    add_profile_args(profile_parser)
+    profile_parser.set_defaults(func=run_profile)
+
     # Legacy --config support (redirect to unlearn)
     parser.add_argument(
         "--config", "-c", type=str, default=None,

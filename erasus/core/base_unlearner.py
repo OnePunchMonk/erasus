@@ -87,6 +87,9 @@ class BaseUnlearner(ABC):
         early_stopping_mode: str = "max",
         precision: Optional[str] = None,
         gradient_checkpointing: bool = False,
+        resume_from: Optional[str] = None,
+        checkpoint_dir: Optional[str] = None,
+        checkpoint_every: int = 0,
         **kwargs: Any,
     ) -> UnlearningResult:
         """
@@ -116,6 +119,12 @@ class BaseUnlearner(ABC):
             Metric name to monitor. Default ``"forget_loss"``.
         early_stopping_mode : str
             ``"min"`` or ``"max"``. Default ``"max"`` (higher forget loss = better).
+        resume_from : str, optional
+            Directory or ``.pt`` path from ``save_unlearning_checkpoint`` to continue training.
+        checkpoint_dir : str, optional
+            Directory to write checkpoints when ``checkpoint_every`` > 0.
+        checkpoint_every : int
+            Save a checkpoint every N completed epochs (0 disables).
 
         Returns
         -------
@@ -124,6 +133,16 @@ class BaseUnlearner(ABC):
         """
         from erasus.core.coreset import Coreset
         from erasus.utils.early_stopping import EarlyStopping
+        from erasus.utils.unlearning_checkpoint import (
+            load_unlearning_checkpoint,
+            save_unlearning_checkpoint,
+        )
+
+        if resume_from and validate_every > 0 and validation_metrics:
+            raise ValueError(
+                "resume_from cannot be combined with in-loop validation "
+                "(validate_every + validation_metrics).",
+            )
 
         start = time.time()
 
@@ -170,6 +189,13 @@ class BaseUnlearner(ABC):
             coreset_size = len(forget_data.dataset)
             original_size = len(forget_data.dataset)
 
+        # Optional resume (loads weights + histories before training)
+        resume_meta: Dict[str, Any] = {}
+        if resume_from:
+            resume_meta = load_unlearning_checkpoint(
+                resume_from, self.model, map_location=self.device,
+            )
+
         # Setup early stopping
         stopper = None
         if early_stopping_patience > 0 and validate_every > 0:
@@ -183,6 +209,23 @@ class BaseUnlearner(ABC):
         best_epoch = 0
         stopped_early = False
         best_state = None
+
+        def _maybe_save_ckpt(
+            forget_losses: List[float],
+            retain_losses: List[float],
+            epochs_done: int,
+        ) -> None:
+            if not checkpoint_dir or checkpoint_every <= 0:
+                return
+            if epochs_done % checkpoint_every != 0:
+                return
+            save_unlearning_checkpoint(
+                checkpoint_dir,
+                model=self.model,
+                forget_losses=forget_losses,
+                retain_losses=retain_losses,
+                epochs_completed=epochs_done,
+            )
 
         if validate_every > 0 and validation_metrics:
             # Run epoch by epoch for in-loop validation
@@ -244,12 +287,30 @@ class BaseUnlearner(ABC):
                             stopped_early = True
                             break
 
+                _maybe_save_ckpt(all_forget_losses, all_retain_losses, epoch + 1)
+
             forget_losses = all_forget_losses
             retain_losses = all_retain_losses
 
             # Restore best model
             if best_state is not None:
                 self.model.load_state_dict(best_state)
+        elif resume_from or checkpoint_every > 0:
+            forget_losses = list(resume_meta.get("forget_losses", []))
+            retain_losses = list(resume_meta.get("retain_losses", []))
+            epochs_done = int(resume_meta.get("epochs_completed", 0))
+
+            for _ in range(epochs):
+                f_losses, r_losses = self._run_unlearning(
+                    forget_loader=forget_loader,
+                    retain_loader=retain_data,
+                    epochs=1,
+                    **kwargs,
+                )
+                forget_losses.extend(f_losses)
+                retain_losses.extend(r_losses)
+                epochs_done += 1
+                _maybe_save_ckpt(forget_losses, retain_losses, epochs_done)
         else:
             # Original path: run all epochs at once
             forget_losses, retain_losses = self._run_unlearning(

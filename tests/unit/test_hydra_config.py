@@ -42,3 +42,24 @@ def test_compose_from_yaml(tmp_path: Path):
     assert config.model.name == "gpt2"
     assert config.strategy.name == "altpo"
     assert config.strategy.epochs == 3
+
+
+def test_compose_flat_legacy_mimics_default_yaml(tmp_path: Path):
+    """Flat ``strategy: name`` style merges into nested StrategyConfig."""
+    p = tmp_path / "flat.yaml"
+    p.write_text(
+        'model_name: "openai/clip-vit-base-patch32"\n'
+        'model_type: "vlm"\n'
+        'strategy: "gradient_ascent"\n'
+        'selector: "random"\n'
+        "epochs: 7\n"
+        "lr: 0.001\n"
+    )
+    cfg = compose_experiment_config(str(p))
+    assert cfg.model.name == "openai/clip-vit-base-patch32"
+    assert cfg.strategy.name == "gradient_ascent"
+    assert cfg.strategy.epochs == 7
+    assert cfg.strategy.lr == 0.001
+    ec = cfg.to_erasus_config()
+    assert ec.epochs == 7
+    assert "accuracy" in ec.metrics
