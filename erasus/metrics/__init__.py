@@ -15,9 +15,12 @@ from erasus.metrics.retrieval_metrics import ZeroShotAccuracyMetric
 from erasus.metrics.metric_suite import MetricSuite
 from erasus.metrics.forgetting.mia import MIAMetric
 from erasus.metrics.forgetting.mia_variants import (
+    GradNormMIAMetric,
     LabelOnlyMIAMetric,
     LiRAMetric,
     MinKProbMetric,
+    MinKPlusPlusMetric,
+    ReferenceMIAMetric,
     ZLibMIAMetric,
 )
 from erasus.metrics.forgetting.confidence import ConfidenceMetric
@@ -70,8 +73,11 @@ for name, cls in [
     ("mia_full", MIAMetric),
     ("lira", LiRAMetric),
     ("label_only_mia", LabelOnlyMIAMetric),
+    ("reference_mia", ReferenceMIAMetric),
+    ("gradnorm_mia", GradNormMIAMetric),
     ("zlib_mia", ZLibMIAMetric),
     ("mink", MinKProbMetric),
+    ("mink_pp", MinKPlusPlusMetric),
     ("confidence", ConfidenceMetric),
     ("feature_distance", FeatureDistanceMetric),
     ("time_complexity", TimeComplexityMetric),
@@ -102,8 +108,11 @@ __all__ = [
     "MIAMetric",
     "LiRAMetric",
     "LabelOnlyMIAMetric",
+    "ReferenceMIAMetric",
+    "GradNormMIAMetric",
     "ZLibMIAMetric",
     "MinKProbMetric",
+    "MinKPlusPlusMetric",
     "ConfidenceMetric",
     "FeatureDistanceMetric",
     "TimeComplexityMetric",

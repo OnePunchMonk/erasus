@@ -13,8 +13,13 @@ from torch.utils.data import DataLoader, TensorDataset
 from erasus.core.registry import metric_registry
 from erasus.metrics.accuracy import AccuracyMetric
 from erasus.metrics.forgetting.knowmem import KnowMemMetric
-from erasus.metrics.forgetting.mia_variants import MinKProbMetric
-from erasus.metrics.forgetting.mia_variants import ZLibMIAMetric
+from erasus.metrics.forgetting.mia_variants import (
+    GradNormMIAMetric,
+    MinKPlusPlusMetric,
+    MinKProbMetric,
+    ReferenceMIAMetric,
+    ZLibMIAMetric,
+)
 from erasus.metrics.metric_suite import MetricSuite
 from erasus.metrics.privacy.privacy_leakage import PrivacyLeakageMetric
 from erasus.metrics.privacy.rag_leakage import RAGLeakageMetric
@@ -67,6 +72,15 @@ class TestMetricRegistry:
 
     def test_mink_registered(self):
         assert metric_registry.get("mink") is not None
+
+    def test_mink_pp_registered(self):
+        assert metric_registry.get("mink_pp") is not None
+
+    def test_reference_mia_registered(self):
+        assert metric_registry.get("reference_mia") is not None
+
+    def test_gradnorm_mia_registered(self):
+        assert metric_registry.get("gradnorm_mia") is not None
 
     def test_zlib_mia_registered(self):
         assert metric_registry.get("zlib_mia") is not None
@@ -139,6 +153,57 @@ class TestMinKProbMetric:
     def test_invalid_k_percent_raises(self):
         with pytest.raises(ValueError):
             MinKProbMetric(k_percent=0.0)
+
+
+class TestMinKPlusPlusMetric:
+    """Test Min-K++ forgetting metric."""
+
+    def test_compute_returns_expected_keys(self, model, forget_loader, retain_loader):
+        metric = MinKPlusPlusMetric(k_percent=25.0)
+        result = metric.compute(
+            model=model,
+            forget_data=forget_loader,
+            retain_data=retain_loader,
+        )
+
+        assert set(result) == {"mink_pp_forget_mean", "mink_pp_retain_mean", "mink_pp_auc"}
+
+
+class TestReferenceMIAMetric:
+    """Test reference-model MIA metric."""
+
+    def test_compute_returns_expected_keys(self, model, forget_loader, retain_loader):
+        reference_model = SmallNet()
+        metric = ReferenceMIAMetric(reference_model=reference_model)
+        result = metric.compute(
+            model=model,
+            forget_data=forget_loader,
+            retain_data=retain_loader,
+        )
+
+        assert set(result) == {
+            "reference_mia_forget_mean",
+            "reference_mia_retain_mean",
+            "reference_mia_auc",
+        }
+
+
+class TestGradNormMIAMetric:
+    """Test gradient-norm MIA metric."""
+
+    def test_compute_returns_expected_keys(self, model, forget_loader, retain_loader):
+        metric = GradNormMIAMetric()
+        result = metric.compute(
+            model=model,
+            forget_data=forget_loader,
+            retain_data=retain_loader,
+        )
+
+        assert set(result) == {
+            "gradnorm_mia_forget_mean",
+            "gradnorm_mia_retain_mean",
+            "gradnorm_mia_auc",
+        }
 
 
 class TestZLibMIAMetric:

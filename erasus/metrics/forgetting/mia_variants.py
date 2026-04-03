@@ -4,8 +4,11 @@ erasus.metrics.forgetting.mia_variants — Advanced MIA variants.
 Includes:
 - LiRA (Likelihood Ratio Attack) — Carlini et al., 2022
 - Label-Only MIA — Choquette-Choo et al., 2021
+- Reference MIA — loss ratio between target and reference model
+- GradNorm MIA — gradient norm of loss w.r.t. the model parameters
 - ZLib MIA — loss normalised by zlib compression ratio
 - Min-K% Prob — average log-probability of the K% lowest-probability tokens
+- Min-K%++ — calibrated Min-K with token-level normalisation
 """
 
 from __future__ import annotations
@@ -264,6 +267,121 @@ class ZLibMIAMetric(BaseMetric):
         return np.concatenate(collected) if collected else np.array([])
 
 
+class ReferenceMIAMetric(BaseMetric):
+    """
+    Reference-model membership inference attack.
+
+    Scores each sample by comparing the target model loss against a
+    reference model loss on the same data. Lower target loss relative to
+    the reference indicates stronger memorization.
+    """
+
+    name = "reference_mia"
+
+    def __init__(self, reference_model: Optional[nn.Module] = None) -> None:
+        self.reference_model = reference_model
+
+    def compute(
+        self,
+        model: nn.Module,
+        forget_data: DataLoader,
+        retain_data: DataLoader,
+        **kwargs: Any,
+    ) -> Dict[str, float]:
+        reference_model = kwargs.get("reference_model", self.reference_model)
+        device = next(model.parameters()).device
+
+        forget_scores = self._collect_scores(model, forget_data, device, reference_model)
+        retain_scores = self._collect_scores(model, retain_data, device, reference_model)
+        labels = np.concatenate([np.ones(len(forget_scores)), np.zeros(len(retain_scores))])
+        scores = np.concatenate([forget_scores, retain_scores])
+
+        return {
+            "reference_mia_forget_mean": float(np.mean(forget_scores)) if len(forget_scores) else 0.0,
+            "reference_mia_retain_mean": float(np.mean(retain_scores)) if len(retain_scores) else 0.0,
+            "reference_mia_auc": float(LiRAMetric._simple_auc(labels, scores)),
+        }
+
+    @staticmethod
+    def _collect_scores(
+        model: nn.Module,
+        loader: DataLoader,
+        device: torch.device,
+        reference_model: Optional[nn.Module],
+    ) -> np.ndarray:
+        target_losses = _collect_per_sample_losses(model, loader, device)
+        if reference_model is None:
+            return -target_losses
+
+        ref_device = next(reference_model.parameters()).device
+        ref_losses = _collect_per_sample_losses(reference_model, loader, ref_device)
+        min_len = min(len(target_losses), len(ref_losses))
+        if min_len == 0:
+            return np.array([])
+        return ref_losses[:min_len] - target_losses[:min_len]
+
+
+class GradNormMIAMetric(BaseMetric):
+    """
+    Gradient-norm membership inference attack.
+
+    Uses the L2 norm of the loss gradient with respect to model
+    parameters as the membership signal.
+    """
+
+    name = "gradnorm_mia"
+
+    def compute(
+        self,
+        model: nn.Module,
+        forget_data: DataLoader,
+        retain_data: DataLoader,
+        **kwargs: Any,
+    ) -> Dict[str, float]:
+        device = next(model.parameters()).device
+
+        forget_scores = self._collect_scores(model, forget_data, device)
+        retain_scores = self._collect_scores(model, retain_data, device)
+        labels = np.concatenate([np.ones(len(forget_scores)), np.zeros(len(retain_scores))])
+        scores = np.concatenate([forget_scores, retain_scores])
+
+        return {
+            "gradnorm_mia_forget_mean": float(np.mean(forget_scores)) if len(forget_scores) else 0.0,
+            "gradnorm_mia_retain_mean": float(np.mean(retain_scores)) if len(retain_scores) else 0.0,
+            "gradnorm_mia_auc": float(LiRAMetric._simple_auc(labels, scores)),
+        }
+
+    @staticmethod
+    def _collect_scores(
+        model: nn.Module,
+        loader: DataLoader,
+        device: torch.device,
+    ) -> np.ndarray:
+        criterion = nn.CrossEntropyLoss()
+        scores: List[float] = []
+        model.eval()
+
+        for batch in loader:
+            if not isinstance(batch, (list, tuple)) or len(batch) < 2:
+                continue
+            inputs, targets = batch[0].to(device), batch[1].to(device)
+            for i in range(inputs.size(0)):
+                model.zero_grad(set_to_none=True)
+                outputs = model(inputs[i : i + 1])
+                logits = outputs.logits if hasattr(outputs, "logits") else outputs
+                loss = criterion(logits, targets[i : i + 1])
+                loss.backward()
+
+                norm_sq = 0.0
+                for param in model.parameters():
+                    if param.grad is not None:
+                        norm_sq += float(param.grad.norm(2).item() ** 2)
+                scores.append(norm_sq ** 0.5)
+
+        model.zero_grad(set_to_none=True)
+        return np.array(scores, dtype=np.float64)
+
+
 class MinKProbMetric(BaseMetric):
     """
     Min-K% probability membership inference metric.
@@ -346,3 +464,113 @@ class MinKProbMetric(BaseMetric):
                     scores.append(float(lowest_values.mean().item()))
 
         return np.array(scores, dtype=np.float64)
+
+
+class MinKPlusPlusMetric(BaseMetric):
+    """
+    Calibrated Min-K%++ membership inference metric.
+
+    Normalises token log-probabilities by the per-position vocabulary
+    mean and standard deviation before averaging the lowest ``k%``.
+    """
+
+    name = "mink_pp"
+
+    def __init__(self, k_percent: float = 20.0) -> None:
+        if not 0 < k_percent <= 100:
+            raise ValueError("k_percent must be in the interval (0, 100].")
+        self.k_percent = k_percent
+
+    def compute(
+        self,
+        model: nn.Module,
+        forget_data: DataLoader,
+        retain_data: DataLoader,
+        **kwargs: Any,
+    ) -> Dict[str, float]:
+        device = next(model.parameters()).device
+        model.eval()
+
+        forget_scores = self._collect_scores(model, forget_data, device)
+        retain_scores = self._collect_scores(model, retain_data, device)
+
+        labels = np.concatenate([np.ones(len(forget_scores)), np.zeros(len(retain_scores))])
+        scores = np.concatenate([forget_scores, retain_scores])
+
+        return {
+            "mink_pp_forget_mean": float(np.mean(forget_scores)) if len(forget_scores) else 0.0,
+            "mink_pp_retain_mean": float(np.mean(retain_scores)) if len(retain_scores) else 0.0,
+            "mink_pp_auc": float(LiRAMetric._simple_auc(labels, scores)),
+        }
+
+    def _collect_scores(
+        self,
+        model: nn.Module,
+        loader: DataLoader,
+        device: torch.device,
+    ) -> np.ndarray:
+        scores: List[float] = []
+
+        with torch.no_grad():
+            for batch in loader:
+                if not isinstance(batch, (list, tuple)) or len(batch) < 2:
+                    continue
+
+                inputs, targets = batch[0].to(device), batch[1].to(device)
+                outputs = model(inputs)
+                logits = outputs.logits if hasattr(outputs, "logits") else outputs
+                log_probs = F.log_softmax(logits, dim=-1)
+
+                if logits.dim() == 2:
+                    mu = log_probs.mean(dim=-1, keepdim=True)
+                    sigma = log_probs.std(dim=-1, keepdim=True).clamp_min(1e-8)
+                    normalized = (log_probs - mu) / sigma
+                    for sample_values in normalized:
+                        k = max(1, int(np.ceil(sample_values.numel() * (self.k_percent / 100.0))))
+                        lowest_values, _ = torch.topk(sample_values, k=k, largest=False)
+                        scores.append(float(lowest_values.mean().item()))
+                    continue
+
+                mu = log_probs.mean(dim=-1, keepdim=True)
+                sigma = log_probs.std(dim=-1, keepdim=True).clamp_min(1e-8)
+                normalized = (log_probs - mu) / sigma
+
+                if targets.dim() == logits.dim() - 1:
+                    safe_targets = targets.clamp_min(0)
+                    token_scores = normalized.gather(-1, safe_targets.unsqueeze(-1)).squeeze(-1)
+                    valid_mask = targets.ne(-100)
+                else:
+                    token_scores = normalized.max(dim=-1).values
+                    valid_mask = torch.ones_like(token_scores, dtype=torch.bool)
+
+                for sample_scores, sample_mask in zip(token_scores, valid_mask):
+                    valid_values = sample_scores[sample_mask]
+                    if valid_values.numel() == 0:
+                        continue
+                    k = max(1, int(np.ceil(valid_values.numel() * (self.k_percent / 100.0))))
+                    lowest_values, _ = torch.topk(valid_values, k=k, largest=False)
+                    scores.append(float(lowest_values.mean().item()))
+
+        return np.array(scores, dtype=np.float64)
+
+
+def _collect_per_sample_losses(
+    model: nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+) -> np.ndarray:
+    """Collect per-sample classification losses."""
+    criterion = nn.CrossEntropyLoss(reduction="none")
+    collected: List[np.ndarray] = []
+
+    with torch.no_grad():
+        for batch in loader:
+            if not isinstance(batch, (list, tuple)) or len(batch) < 2:
+                continue
+            inputs, targets = batch[0].to(device), batch[1].to(device)
+            outputs = model(inputs)
+            logits = outputs.logits if hasattr(outputs, "logits") else outputs
+            losses = criterion(logits, targets).detach().cpu().numpy()
+            collected.append(losses)
+
+    return np.concatenate(collected) if collected else np.array([])
