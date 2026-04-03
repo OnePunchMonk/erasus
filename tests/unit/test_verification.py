@@ -2,7 +2,7 @@
 Tests for the unlearning verification features:
 - MIA Suite (6-attack battery)
 - Memorization metrics (extraction strength, exact memorization, verbatim)
-- Adversarial evaluation (cross-prompt leakage, keyword injection, paraphrase)
+- Adversarial evaluation (cross-prompt leakage, keyword injection, paraphrase, multilingual)
 - Relearning robustness (benign finetuning, quantization, LoRA, prompt extraction)
 - Unified verification suite
 """
@@ -224,6 +224,11 @@ class TestCrossPromptLeakage:
         assert "passed" in result
         assert 0.0 <= result["leakage_rate"] <= 1.0
 
+    def test_base_class(self):
+        from erasus.evaluation.adversarial import BaseAdversarialTest, CrossPromptLeakageTest
+
+        assert issubclass(CrossPromptLeakageTest, BaseAdversarialTest)
+
     def test_custom_threshold(self, model, forget_loader, retain_loader):
         from erasus.evaluation.adversarial import CrossPromptLeakageTest
 
@@ -285,6 +290,20 @@ class TestPromptEngineeringAttack:
         assert "passed" in result
 
 
+class TestMultilingualLeakage:
+    def test_runs(self, model, forget_loader):
+        from erasus.evaluation.adversarial import MultilingualLeakageTest
+
+        attack = MultilingualLeakageTest(languages=["es", "fr"])
+        result = attack.run(model, forget_loader)
+
+        assert result["test"] == "multilingual_leakage"
+        assert "baseline_forget_accuracy" in result
+        assert "es_accuracy" in result
+        assert "fr_accuracy" in result
+        assert "passed" in result
+
+
 class TestAdversarialEvaluator:
     def test_runs_all(self, model, forget_loader, retain_loader):
         from erasus.evaluation.adversarial import AdversarialEvaluator
@@ -296,6 +315,7 @@ class TestAdversarialEvaluator:
         assert "keyword_injection" in report
         assert "paraphrase" in report
         assert "prompt_engineering" in report
+        assert "multilingual" in report
         assert "overall" in report
         assert "tests_passed" in report["overall"]
         assert "verdict" in report["overall"]
@@ -525,8 +545,10 @@ class TestRegistryIntegration:
         from erasus.metrics import MIASuite, ExtractionStrengthMetric, ExactMemorizationMetric, VerbatimMemorizationMetric
         from erasus.evaluation import (
             AdversarialEvaluator,
+            BaseAdversarialTest,
             CrossPromptLeakageTest,
             KeywordInjectionTest,
+            MultilingualLeakageTest,
             ParaphraseRobustnessTest,
             PromptEngineeringAttack,
             RelearningRobustnessEvaluator,
@@ -539,5 +561,7 @@ class TestRegistryIntegration:
         # All imports succeeded
         assert MIASuite is not None
         assert AdversarialEvaluator is not None
+        assert BaseAdversarialTest is not None
+        assert MultilingualLeakageTest is not None
         assert PromptEngineeringAttack is not None
         assert UnlearningVerificationSuite is not None
