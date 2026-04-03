@@ -14,7 +14,11 @@ from erasus.metrics.retrieval_metrics import ZeroShotAccuracyMetric
 # New metric modules
 from erasus.metrics.metric_suite import MetricSuite
 from erasus.metrics.forgetting.mia import MIAMetric
-from erasus.metrics.forgetting.mia_variants import LiRAMetric, LabelOnlyMIAMetric
+from erasus.metrics.forgetting.mia_variants import (
+    LabelOnlyMIAMetric,
+    LiRAMetric,
+    MinKProbMetric,
+)
 from erasus.metrics.forgetting.confidence import ConfidenceMetric
 from erasus.metrics.forgetting.feature_distance import FeatureDistanceMetric
 from erasus.metrics.efficiency.time_complexity import TimeComplexityMetric
@@ -56,6 +60,7 @@ for name, cls in [
     ("mia_full", MIAMetric),
     ("lira", LiRAMetric),
     ("label_only_mia", LabelOnlyMIAMetric),
+    ("mink", MinKProbMetric),
     ("confidence", ConfidenceMetric),
     ("feature_distance", FeatureDistanceMetric),
     ("time_complexity", TimeComplexityMetric),
@@ -81,6 +86,7 @@ __all__ = [
     "MIAMetric",
     "LiRAMetric",
     "LabelOnlyMIAMetric",
+    "MinKProbMetric",
     "ConfidenceMetric",
     "FeatureDistanceMetric",
     "TimeComplexityMetric",

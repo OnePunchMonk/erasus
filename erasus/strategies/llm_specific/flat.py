@@ -1,27 +1,20 @@
 """
-FLAT — LLM Unlearning via Loss Adjustment.
+FLAT — LLM unlearning via loss adjustment.
 
-Paper: "FLAT: LLM Unlearning via Loss Adjustment with No Retain Data
-or Reference Model" (Li et al., ICLR 2025)
+Paper: "FLAT: LLM Unlearning via Loss Adjustment with No Retain Data"
+(Li et al., ICLR 2025)
 
-FLAT is the most practical preference-based method because it requires
-only the forget data — no retain set, no reference model.
+FLAT is designed to work with the forget set alone. This implementation
+uses a forget-only loss adjustment that combines:
 
-Two components:
-1. IDK loss (forget set): train the model to output maximum entropy
-   (I Don't Know) on forget-set queries.  For classifiers this is a
-   uniform target; for LLMs it is an "I don't know" token sequence.
-
-2. Maintain loss (retain set, optional): self-distillation — the model
-   KL-diverges toward its own pre-step output, preserving general
-   capabilities without a separate retain dataset.
-
-Loss: L = α · L_IDK + (1-α) · L_maintain
+1. An IDK / high-entropy term that pulls output distributions toward
+   uniformity on forget examples.
+2. A direct forget term that pushes down the average log-probability of
+   the forget labels/tokens.
 """
 
 from __future__ import annotations
 
-import copy
 from typing import Any, List, Optional, Tuple
 
 import torch
@@ -31,27 +24,31 @@ from torch.utils.data import DataLoader
 
 from erasus.core.base_strategy import BaseStrategy
 from erasus.core.registry import strategy_registry
+from erasus.strategies.llm_specific.simnpo import (
+    _forward_logits,
+    _split_batch,
+    _token_log_probs_and_mask,
+)
 
 
 @strategy_registry.register("flat")
 class FLATStrategy(BaseStrategy):
     """
-    FLAT: forget-data-only unlearning via loss adjustment.
+    Forget-only FLAT unlearning.
 
     Parameters
     ----------
     alpha : float
-        Weight of IDK loss vs maintain loss (default 0.5).
+        Interpolation between the IDK term and the direct forget term.
     idk_weight : float
-        Additional scaling of the IDK loss (default 1.0).
+        Scale applied to the uniform-target IDK term.
     maintain_weight : float
-        Additional scaling of the self-distillation loss (default 1.0).
+        Scale applied to the direct forget term.
     lr : float
-        Learning rate (default 1e-5).
+        Learning rate.
     n_maintain_steps : int
-        Number of self-distillation steps on the forget batch per
-        forget step (default 1).  Keeps general capabilities stable
-        without a separate retain loader.
+        Reserved for API compatibility; FLAT operates in a single
+        forget-only optimisation step per batch in this implementation.
     """
 
     def __init__(
@@ -78,6 +75,8 @@ class FLATStrategy(BaseStrategy):
         epochs: int = 5,
         **kwargs: Any,
     ) -> Tuple[nn.Module, List[float], List[float]]:
+        del retain_loader  # FLAT does not require retain data.
+
         device = next(model.parameters()).device
         model.train()
         optimizer = torch.optim.Adam(model.parameters(), lr=self.lr)
@@ -85,70 +84,26 @@ class FLATStrategy(BaseStrategy):
         forget_losses: List[float] = []
         retain_losses: List[float] = []
 
-        for epoch in range(epochs):
+        for _ in range(epochs):
             epoch_loss = 0.0
-            epoch_retain = 0.0
-            n = 0
-            n_retain = 0
-
-            forget_iter = iter(forget_loader)
-            retain_iter = iter(retain_loader) if retain_loader is not None else None
+            n_batches = 0
 
             for batch in forget_loader:
-                inputs, labels = batch[0].to(device), batch[1].to(device)
-
-                # --- Step 1: IDK loss ---
-                # Target: uniform distribution (maximum entropy = "I don't know")
-                out = model(inputs)
-                logits = out.logits if hasattr(out, "logits") else out
-                n_classes = logits.size(-1)
-
-                uniform_target = torch.full_like(logits, 1.0 / n_classes)
+                model_inputs, labels = _split_batch(batch, device)
+                logits = _forward_logits(model, model_inputs)
                 log_probs = F.log_softmax(logits, dim=-1)
+
+                uniform_target = torch.full_like(log_probs, 1.0 / log_probs.size(-1))
                 idk_loss = F.kl_div(log_probs, uniform_target, reduction="batchmean")
 
-                # --- Step 2: Maintain loss (self-distillation) ---
-                # Snapshot the model's current output before the IDK update
-                with torch.no_grad():
-                    snapshot_out = model(inputs)
-                    snapshot_logits = (
-                        snapshot_out.logits if hasattr(snapshot_out, "logits") else snapshot_out
-                    )
-                    snapshot_probs = F.softmax(snapshot_logits, dim=-1)
-
-                # After IDK update, distil back toward snapshot on *retain* data if available
-                # (when no retain data, apply maintain loss on the same forget batch)
-                if retain_loader is not None and retain_iter is not None:
-                    try:
-                        retain_batch = next(retain_iter)
-                    except StopIteration:
-                        retain_iter = iter(retain_loader)
-                        retain_batch = next(retain_iter)
-
-                    r_inputs = retain_batch[0].to(device)
-                    with torch.no_grad():
-                        r_snap_out = model(r_inputs)
-                        r_snap_logits = (
-                            r_snap_out.logits if hasattr(r_snap_out, "logits") else r_snap_out
-                        )
-                        r_snap_probs = F.softmax(r_snap_logits, dim=-1)
-
-                    r_out = model(r_inputs)
-                    r_logits = r_out.logits if hasattr(r_out, "logits") else r_out
-                    r_log_probs = F.log_softmax(r_logits, dim=-1)
-                    maintain_loss = F.kl_div(r_log_probs, r_snap_probs, reduction="batchmean")
-                    epoch_retain += maintain_loss.item()
-                    n_retain += 1
-                else:
-                    # Self-distillation on forget batch keeps the model stable
-                    out2 = model(inputs)
-                    logits2 = out2.logits if hasattr(out2, "logits") else out2
-                    log_probs2 = F.log_softmax(logits2, dim=-1)
-                    maintain_loss = F.kl_div(log_probs2, snapshot_probs, reduction="batchmean")
+                token_log_probs, valid_mask = _token_log_probs_and_mask(logits, labels)
+                token_log_probs = token_log_probs * valid_mask.to(token_log_probs.dtype)
+                token_counts = valid_mask.sum(dim=-1).clamp_min(1).to(logits.dtype)
+                forget_term = token_log_probs.sum(dim=-1) / token_counts
 
                 loss = (
                     self.alpha * self.idk_weight * idk_loss
-                    + (1 - self.alpha) * self.maintain_weight * maintain_loss
+                    + (1.0 - self.alpha) * self.maintain_weight * forget_term.mean()
                 )
 
                 optimizer.zero_grad()
@@ -156,10 +111,8 @@ class FLATStrategy(BaseStrategy):
                 optimizer.step()
 
                 epoch_loss += loss.item()
-                n += 1
+                n_batches += 1
 
-            forget_losses.append(epoch_loss / max(n, 1))
-            if retain_losses is not None and n_retain > 0:
-                retain_losses.append(epoch_retain / n_retain)
+            forget_losses.append(epoch_loss / max(n_batches, 1))
 
         return model, forget_losses, retain_losses

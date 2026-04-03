@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from erasus.core.registry import metric_registry
 from erasus.metrics.accuracy import AccuracyMetric
+from erasus.metrics.forgetting.mia_variants import MinKProbMetric
 from erasus.metrics.metric_suite import MetricSuite
 
 # Ensure metrics are registered
@@ -60,6 +61,9 @@ class TestMetricRegistry:
     def test_perplexity_registered(self):
         assert metric_registry.get("perplexity") is not None
 
+    def test_mink_registered(self):
+        assert metric_registry.get("mink") is not None
+
 
 class TestAccuracyMetric:
     """Test AccuracyMetric."""
@@ -101,3 +105,21 @@ class TestMetricSuite:
         suite = MetricSuite([])
         result = suite.run(model, forget_loader, retain_loader)
         assert isinstance(result, dict)
+
+
+class TestMinKProbMetric:
+    """Test Min-K forgetting metric."""
+
+    def test_compute_returns_expected_keys(self, model, forget_loader, retain_loader):
+        metric = MinKProbMetric(k_percent=25.0)
+        result = metric.compute(
+            model=model,
+            forget_data=forget_loader,
+            retain_data=retain_loader,
+        )
+
+        assert set(result) == {"mink_forget_mean", "mink_retain_mean", "mink_auc"}
+
+    def test_invalid_k_percent_raises(self):
+        with pytest.raises(ValueError):
+            MinKProbMetric(k_percent=0.0)

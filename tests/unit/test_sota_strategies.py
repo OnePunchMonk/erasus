@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
+from erasus.core.base_strategy import BaseStrategy
 from erasus.core.registry import strategy_registry
 from erasus.strategies.llm_specific.npo import NPOStrategy
 from erasus.strategies.llm_specific.simnpo import SimNPOStrategy
@@ -143,9 +144,10 @@ class TestSimNPOStrategy:
         assert "simnpo" in strategy_registry._registry
         strategy_cls = strategy_registry.get("simnpo")
         assert issubclass(strategy_cls, SimNPOStrategy)
+        assert issubclass(strategy_cls, BaseStrategy)
 
     def test_unlearn(self, tiny_classifier, forget_loader, retain_loader):
-        """Test unlearning without reference model dependency."""
+        """Test forget-only unlearning even when retain data is passed."""
         strategy = SimNPOStrategy(beta=0.1, lr=1e-3)
         model = tiny_classifier.train()
 
@@ -159,6 +161,7 @@ class TestSimNPOStrategy:
         assert isinstance(unlearned_model, nn.Module)
         assert len(forget_losses) == 2
         assert all(isinstance(l, float) for l in forget_losses)
+        assert len(retain_losses) == 0
 
     def test_no_reference_needed(self, tiny_classifier, forget_loader):
         """Test that SimNPO works without retain data."""
@@ -283,6 +286,7 @@ class TestFLATStrategy:
         assert "flat" in strategy_registry._registry
         strategy_cls = strategy_registry.get("flat")
         assert issubclass(strategy_cls, FLATStrategy)
+        assert issubclass(strategy_cls, BaseStrategy)
 
     def test_unlearn_no_retain(self, tiny_classifier, forget_loader):
         """Test unlearning without retain data (uses self-distillation)."""
@@ -301,7 +305,7 @@ class TestFLATStrategy:
         assert len(retain_losses) == 0
 
     def test_unlearn_with_retain(self, tiny_classifier, forget_loader, retain_loader):
-        """Test unlearning with retain data."""
+        """Test retain data is optional and ignored by forget-only FLAT."""
         strategy = FLATStrategy(alpha=0.5, lr=1e-3)
         model = tiny_classifier.train()
 
@@ -314,7 +318,7 @@ class TestFLATStrategy:
 
         assert isinstance(unlearned_model, nn.Module)
         assert len(forget_losses) == 2
-        assert len(retain_losses) == 2
+        assert len(retain_losses) == 0
 
     def test_alpha_variations(self, tiny_classifier, forget_loader):
         """Test different alpha values."""
