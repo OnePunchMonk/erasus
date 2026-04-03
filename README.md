@@ -356,10 +356,7 @@ erasus/
 ```
 
 ```bash
-python3 -m pytest tests/ -v --tb=short \
-  --ignore=tests/test_components.py \
-  --ignore=tests/unit/test_sprint_b.py \
-  --ignore=tests/unit/test_sprint_f.py
+python3 -m pytest tests/ -v --tb=short
 ```
 
 ---
