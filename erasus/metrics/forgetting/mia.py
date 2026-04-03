@@ -15,6 +15,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from erasus.core.base_metric import BaseMetric
+from erasus.utils.numpy_compat import trapezoid as np_trapezoid
+from erasus.utils.torch_compat import infer_module_device
 
 
 class MIAMetric(BaseMetric):
@@ -40,7 +42,7 @@ class MIAMetric(BaseMetric):
         retain_data: DataLoader,
         **kwargs: Any,
     ) -> Dict[str, float]:
-        device = next(model.parameters()).device
+        device = infer_module_device(model)
         model.eval()
 
         member_losses = self._collect_losses(model, forget_data, device)
@@ -129,7 +131,7 @@ class MIAMetric(BaseMetric):
         sorted_idx = np.argsort(fpr)
         fpr_sorted = fpr[sorted_idx]
         tpr_sorted = tpr[sorted_idx]
-        return float(np.trapz(tpr_sorted, fpr_sorted))
+        return float(np_trapezoid(tpr_sorted, fpr_sorted))
 
     @staticmethod
     def _tpr_at_fpr(

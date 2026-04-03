@@ -51,9 +51,12 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from erasus.core.base_metric import BaseMetric
+from erasus.utils.numpy_compat import trapezoid as np_trapezoid
+from erasus.utils.torch_compat import infer_module_device
 
 
 # ---------------------------------------------------------------------------
@@ -105,11 +108,19 @@ def _evaluate(
             inputs, targets = batch[0].to(device), batch[1].to(device)
             logits = _forward_logits(model, inputs)
 
-            total_loss += criterion(logits, targets).item()
+            if logits.dim() == 3:
+                b, seq, v = logits.shape
+                total_loss += F.cross_entropy(
+                    logits.reshape(-1, v),
+                    targets.reshape(-1),
+                    reduction="sum",
+                ).item()
+            else:
+                total_loss += criterion(logits, targets).item()
             probs = torch.softmax(logits, dim=-1)
             total_conf += probs.max(dim=-1).values.sum().item()
             correct += (logits.argmax(dim=-1) == targets).sum().item()
-            total += targets.size(0)
+            total += targets.numel()
 
     n = max(total, 1)
     return {
@@ -162,9 +173,18 @@ def _finetune_one_epoch(
         inputs, targets = batch[0].to(device), batch[1].to(device)
         optimizer.zero_grad()
         logits = _forward_logits(model, inputs)
-        loss = criterion(logits, targets)
-        loss.backward()
-        optimizer.step()
+        if logits.dim() == 3:
+            b, seq, v = logits.shape
+            loss = F.cross_entropy(
+                logits.reshape(-1, v),
+                targets.reshape(-1),
+                reduction="mean",
+            )
+        else:
+            loss = criterion(logits, targets)
+        if loss.requires_grad:
+            loss.backward()
+            optimizer.step()
 
         epoch_loss += loss.item()
         n_batches += 1
@@ -193,7 +213,7 @@ def _auc_trapezoid(values: List[float]) -> float:
     else:
         y = np.zeros_like(y)
 
-    return float(np.trapz(y, x))
+    return float(np_trapezoid(y, x))
 
 
 # ---------------------------------------------------------------------------
@@ -320,7 +340,7 @@ class BenignFinetuningMetric(BaseMetric):
                 reason="no benign_data or retain_data provided for fine-tuning"
             )
 
-        device = next(model.parameters()).device
+        device = infer_module_device(model)
         eval_criterion = nn.CrossEntropyLoss(reduction="sum")
         train_criterion = nn.CrossEntropyLoss(reduction="mean")
 

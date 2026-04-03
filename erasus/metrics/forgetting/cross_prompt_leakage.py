@@ -40,6 +40,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
 from erasus.core.base_metric import BaseMetric
+from erasus.utils.torch_compat import infer_module_device
 
 
 # ---------------------------------------------------------------------------
@@ -93,14 +94,22 @@ def _collect_stats(
             if hasattr(outputs, "logits"):
                 outputs = outputs.logits  # HuggingFace-style models
 
-            # Per-sample cross-entropy
-            per_sample_loss = criterion(outputs, targets)
+            # Per-sample cross-entropy (flatten for LM-style [B, L, V] logits)
+            if outputs.dim() == 3:
+                b, seq, v = outputs.shape
+                per_sample_loss = F.cross_entropy(
+                    outputs.reshape(-1, v),
+                    targets.reshape(-1),
+                    reduction="none",
+                )
+            else:
+                per_sample_loss = criterion(outputs, targets)
             losses.extend(per_sample_loss.cpu().tolist())
 
             # Per-sample max softmax confidence
             probs = F.softmax(outputs, dim=-1)
             max_conf = probs.max(dim=-1).values
-            confidences.extend(max_conf.cpu().tolist())
+            confidences.extend(max_conf.reshape(-1).cpu().tolist())
 
     return np.array(losses, dtype=np.float64), np.array(confidences, dtype=np.float64)
 
@@ -240,7 +249,7 @@ class CrossPromptLeakageMetric(BaseMetric):
                 "cross_prompt_leakage_detected": 0.0,
             }
 
-        device = next(model.parameters()).device
+        device = infer_module_device(model)
 
         # ------------------------------------------------------------------ #
         # 1. Collect raw batches
