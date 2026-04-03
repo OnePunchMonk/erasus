@@ -412,6 +412,52 @@ class TestRealBenchmarkEntrypoints:
         assert results["benchmark"] == "wmdp_real"
         assert results["accuracy"] == 1.0
 
+    def test_tofu_run_real_on_local_split_files(self, tmp_path):
+        module = self._load_module(
+            "/Users/avaya.aggarwal@zomato.com/erasus/benchmarks/tofu/run_real.py",
+            "tofu_run_real_test",
+        )
+
+        data_dir = tmp_path / "tofu"
+        data_dir.mkdir(parents=True)
+        (data_dir / "forget_01.json").write_text(
+            json.dumps([{"question": "Who is A?", "answer": "Author A"}]),
+            encoding="utf-8",
+        )
+        (data_dir / "retain.json").write_text(
+            json.dumps([{"question": "Who is B?", "answer": "Author B"}]),
+            encoding="utf-8",
+        )
+
+        class FakeTokenizer:
+            def __call__(self, text, max_length=None, truncation=None, padding=None, return_tensors=None):
+                return {
+                    "input_ids": torch.tensor([[1, 2, 3, 4]]),
+                    "attention_mask": torch.ones(1, 4),
+                }
+
+        class FakeLM(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.anchor = nn.Parameter(torch.zeros(1))
+
+            def forward(self, input_ids=None, attention_mask=None, labels=None):
+                logits = torch.zeros(input_ids.size(0), input_ids.size(1), 8, device=input_ids.device)
+                loss = torch.tensor(1.0, device=input_ids.device)
+                return type("Output", (), {"loss": loss, "logits": logits})()
+
+        results = module.run_real_tofu(
+            data_dir=str(data_dir),
+            model=FakeLM(),
+            tokenizer=FakeTokenizer(),
+            batch_size=1,
+            max_length=8,
+        )
+
+        assert results["benchmark"] == "tofu_real"
+        assert "forget_loss" in results
+        assert "retain_loss" in results
+
     def test_muse_run_real_on_local_split_files(self, tmp_path):
         module = self._load_module(
             "/Users/avaya.aggarwal@zomato.com/erasus/benchmarks/muse/run_real.py",
