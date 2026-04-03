@@ -12,10 +12,12 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from erasus.core.registry import metric_registry
 from erasus.metrics.accuracy import AccuracyMetric
+from erasus.metrics.forgetting.knowmem import KnowMemMetric
 from erasus.metrics.forgetting.mia_variants import MinKProbMetric
 from erasus.metrics.forgetting.mia_variants import ZLibMIAMetric
 from erasus.metrics.metric_suite import MetricSuite
 from erasus.metrics.privacy.privacy_leakage import PrivacyLeakageMetric
+from erasus.metrics.privacy.rag_leakage import RAGLeakageMetric
 
 # Ensure metrics are registered
 import erasus.metrics  # noqa: F401
@@ -71,6 +73,12 @@ class TestMetricRegistry:
 
     def test_privacy_leakage_registered(self):
         assert metric_registry.get("privacy_leakage") is not None
+
+    def test_rag_leakage_registered(self):
+        assert metric_registry.get("rag_leakage") is not None
+
+    def test_knowmem_registered(self):
+        assert metric_registry.get("knowmem") is not None
 
 
 class TestAccuracyMetric:
@@ -151,6 +159,44 @@ class TestZLibMIAMetric:
         }
 
 
+class TestKnowMemMetric:
+    """Test TOFU-style knowledge memorization probing."""
+
+    def test_compute_returns_expected_keys(self):
+        class DummyTokenizer:
+            def __call__(self, text, return_tensors=None, truncation=None, max_length=None):
+                return {"input_ids": torch.tensor([[1, 2, 3]]), "attention_mask": torch.ones(1, 3)}
+
+            def decode(self, tokens, skip_special_tokens=True):
+                return "alpha remembered"
+
+        class DummyGenModel(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.anchor = nn.Parameter(torch.zeros(1))
+
+            def generate(self, input_ids, attention_mask=None, max_new_tokens=32):
+                extra = torch.tensor([[99]], device=input_ids.device)
+                return torch.cat([input_ids, extra], dim=1)
+
+        qa_samples = [
+            {"question": "Who is Alpha?", "answer": "alpha remembered"},
+            {"question": "Who is Beta?", "answer": "alpha remembered"},
+        ]
+        loader = DataLoader(qa_samples, batch_size=2, shuffle=False)
+
+        metric = KnowMemMetric(match_threshold=0.5)
+        result = metric.compute(
+            model=DummyGenModel(),
+            forget_data=loader,
+            retain_data=loader,
+            tokenizer=DummyTokenizer(),
+        )
+
+        assert set(result) == {"knowmem_forget", "knowmem_retain", "knowmem_gap"}
+        assert result["knowmem_forget"] >= 0.5
+
+
 class TestStandaloneMemorizationModules:
     """Ensure standalone metric modules remain importable."""
 
@@ -182,4 +228,22 @@ class TestPrivacyLeakageMetric:
             "privacy_leakage",
             "privacy_forget_loss",
             "privacy_retain_loss",
+        }
+
+
+class TestRAGLeakageMetric:
+    """Test RAG leakage metric."""
+
+    def test_compute_returns_expected_keys(self, model, forget_loader, retain_loader):
+        metric = RAGLeakageMetric()
+        result = metric.compute(
+            model=model,
+            forget_data=forget_loader,
+            retain_data=retain_loader,
+        )
+
+        assert set(result) == {
+            "rag_leakage",
+            "rag_context_loss",
+            "rag_retain_loss",
         }

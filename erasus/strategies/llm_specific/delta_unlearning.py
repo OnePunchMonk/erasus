@@ -49,13 +49,22 @@ class DeltaUnlearningProxy(nn.Module):
         """
         super().__init__()
         self.embedding = nn.Embedding(num_classes, input_dim)
+        self.feature_proj = nn.LazyLinear(hidden_dim)
         self.fc1 = nn.Linear(input_dim, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, num_classes)
 
-    def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
-        """Compute logit offsets."""
-        x = self.embedding(input_ids)
-        x = torch.relu(self.fc1(x.mean(dim=1)))
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Compute logit offsets for token IDs or continuous features."""
+        if inputs.dtype in (torch.int32, torch.int64, torch.long):
+            x = self.embedding(inputs)
+            if x.dim() > 2:
+                x = x.mean(dim=1)
+            x = torch.relu(self.fc1(x))
+        else:
+            x = inputs.float()
+            if x.dim() > 2:
+                x = x.mean(dim=1)
+            x = torch.relu(self.feature_proj(x))
         offsets = self.fc2(x)
         return offsets
 
@@ -123,9 +132,14 @@ class DeltaUnlearningStrategy(BaseStrategy):
             (wrapped_model, forget_losses, retain_losses)
         """
         device = next(model.parameters()).device
+        first_batch, forget_batches = self._prepare_forget_batches(forget_loader)
+        num_classes = self._infer_num_classes(model, first_batch, device)
 
         # Create proxy
-        self.proxy = DeltaUnlearningProxy(hidden_dim=self.proxy_hidden_dim)
+        self.proxy = DeltaUnlearningProxy(
+            hidden_dim=self.proxy_hidden_dim,
+            num_classes=num_classes,
+        )
         self.proxy.to(device)
         self.proxy.train()
 
@@ -141,7 +155,7 @@ class DeltaUnlearningStrategy(BaseStrategy):
             n_retain = 0
 
             # --- Forget pass ---
-            for batch in forget_loader:
+            for batch in forget_batches:
                 inputs, labels = batch[0].to(device), batch[1].to(device)
 
                 # Get base model logits
@@ -201,6 +215,32 @@ class DeltaUnlearningStrategy(BaseStrategy):
         # Wrap model with proxy
         wrapped_model = DeltaUnlearningWrapper(model, self.proxy)
         return wrapped_model, forget_losses, retain_losses
+
+    @staticmethod
+    def _prepare_forget_batches(
+        forget_loader: DataLoader,
+    ) -> Tuple[Tuple[torch.Tensor, ...], List[Tuple[torch.Tensor, ...]]]:
+        """Materialize forget batches so the first one can be reused for shape inference."""
+        forget_batches = list(forget_loader)
+        if not forget_batches:
+            raise ValueError("forget_loader must contain at least one batch")
+        first_batch = forget_batches[0]
+        return first_batch, forget_batches
+
+    @staticmethod
+    def _infer_num_classes(
+        model: nn.Module,
+        batch: Tuple[torch.Tensor, ...],
+        device: torch.device,
+    ) -> int:
+        """Infer output dimension from the wrapped model on a forget batch."""
+        inputs = batch[0].to(device)
+        with torch.no_grad():
+            base_out = model(inputs)
+            base_logits = base_out.logits if hasattr(base_out, "logits") else base_out
+        if base_logits.dim() == 1:
+            return 1
+        return int(base_logits.size(-1))
 
 
 class DeltaUnlearningWrapper(nn.Module):

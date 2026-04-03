@@ -49,6 +49,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
+from erasus.evaluation.relearning.base import BaseRelearningAttack
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -87,7 +89,7 @@ def _compute_metrics(
 # Benign Fine-tuning Attack
 # ---------------------------------------------------------------------------
 
-class BenignFinetuningAttack:
+class BenignFinetuningAttack(BaseRelearningAttack):
     """
     Fine-tune the unlearned model on benign (non-forget) data and
     check if forget-set performance recovers.
@@ -198,7 +200,7 @@ class BenignFinetuningAttack:
 # Quantization Attack
 # ---------------------------------------------------------------------------
 
-class QuantizationAttack:
+class QuantizationAttack(BaseRelearningAttack):
     """
     Quantize model weights and check if forget-set performance recovers.
 
@@ -303,7 +305,7 @@ class QuantizationAttack:
 # LoRA Relearning Attack
 # ---------------------------------------------------------------------------
 
-class LoRARelearningAttack:
+class LoRARelearningAttack(BaseRelearningAttack):
     """
     Attach a low-rank adapter and fine-tune on retain data to test
     if forgotten knowledge can be recovered through LoRA.
@@ -494,7 +496,7 @@ def _subset_loader(loader: DataLoader, fraction: float) -> DataLoader:
 # Prompt Extraction Attack
 # ---------------------------------------------------------------------------
 
-class PromptExtractionAttack:
+class PromptExtractionAttack(BaseRelearningAttack):
     """
     Attempt to extract forgotten information via input manipulation.
 
@@ -772,3 +774,13 @@ class RelearningRobustnessEvaluator:
         }
 
         return results
+
+
+__all__ = [
+    "BaseRelearningAttack",
+    "BenignFinetuningAttack",
+    "QuantizationAttack",
+    "LoRARelearningAttack",
+    "PromptExtractionAttack",
+    "RelearningRobustnessEvaluator",
+]

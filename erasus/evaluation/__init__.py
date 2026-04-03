@@ -20,6 +20,7 @@ from erasus.evaluation.adversarial import (
     CrossPromptLeakageTest,
     KeywordInjectionTest,
     ParaphraseRobustnessTest,
+    PromptEngineeringAttack,
 )
 from erasus.evaluation.relearning import (
     RelearningRobustnessEvaluator,
@@ -28,6 +29,7 @@ from erasus.evaluation.relearning import (
     LoRARelearningAttack,
     PromptExtractionAttack,
 )
+from erasus.evaluation.relearning.base import BaseRelearningAttack
 from erasus.evaluation.verification_suite import UnlearningVerificationSuite
 from erasus.evaluation.benchmark_protocol import (
     UnlearningBenchmark,
@@ -41,7 +43,9 @@ __all__ = [
     "CrossPromptLeakageTest",
     "KeywordInjectionTest",
     "ParaphraseRobustnessTest",
+    "PromptEngineeringAttack",
     "RelearningRobustnessEvaluator",
+    "BaseRelearningAttack",
     "BenignFinetuningAttack",
     "QuantizationAttack",
     "LoRARelearningAttack",
