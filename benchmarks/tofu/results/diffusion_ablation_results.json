@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "model": "Stable Diffusion v1.4 UNet (cross-attn only)",
+    "model_params": "860M total, 44M trainable",
+    "device": "Tesla T4 GPU",
+    "strategy": "gradient_ascent (manual)",
+    "epochs": 3,
+    "forget_set": "64 samples ('cat' concept)",
+    "retain_set": "96 samples ('dog', 'car', 'landscape')",
+    "base_forget_loss": 0.318969,
+    "base_retain_loss": 0.416243
+  },
+  "results": {
+    "top_loss (influence)": [
+      {"fraction": 0.05, "forget_loss": 0.357964, "retain_loss": 0.378612, "status": "OK"},
+      {"fraction": 0.1, "forget_loss": 0.313653, "retain_loss": 0.388747, "status": "OK"},
+      {"fraction": 0.2, "forget_loss": 0.401141, "retain_loss": 0.414122, "status": "OK"},
+      {"fraction": 0.5, "forget_loss": 0.392506, "retain_loss": 0.356932, "status": "OK"},
+      {"fraction": 1.0, "forget_loss": 0.401237, "retain_loss": 0.348841, "status": "OK"}
+    ],
+    "random": [
+      {"fraction": 0.05, "forget_loss": 0.439278, "retain_loss": 0.361675, "status": "OK"},
+      {"fraction": 0.1, "forget_loss": 0.396370, "retain_loss": 0.397071, "status": "OK"},
+      {"fraction": 0.2, "forget_loss": 0.415611, "retain_loss": 0.352466, "status": "OK"},
+      {"fraction": 0.5, "forget_loss": 0.406955, "retain_loss": 0.344748, "status": "OK"},
+      {"fraction": 1.0, "forget_loss": 0.396166, "retain_loss": 0.390680, "status": "OK"}
+    ]
+  }
+}

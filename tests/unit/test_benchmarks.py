@@ -13,6 +13,7 @@ from erasus.benchmarks import (
     TOFUEvaluator,
     LMEvalWrapper,
     LMEvalBenchmark,
+    PostUnlearningBenchmarkSuite,
     BenchmarkRunner,
     BenchmarkResult,
 )
@@ -242,6 +243,23 @@ class TestLMEvalBenchmark:
 
         # Just check it doesn't crash on instantiation
         assert benchmark.wrapper is not None
+
+
+class TestPostUnlearningBenchmarkSuite:
+    """Test the post-unlearning wrapper for standard tasks."""
+
+    def test_init(self, tiny_model, dummy_tokenizer):
+        suite = PostUnlearningBenchmarkSuite(tiny_model, dummy_tokenizer)
+        assert suite.benchmark is not None
+
+    def test_default_tasks(self):
+        assert PostUnlearningBenchmarkSuite.DEFAULT_TASKS == [
+            "mmlu",
+            "gsm8k",
+            "truthfulqa",
+            "hellaswag",
+            "arc",
+        ]
 
 
 class TestBenchmarkRunner:

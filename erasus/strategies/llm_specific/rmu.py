@@ -13,8 +13,9 @@ removal).  Rather than modifying output distributions, RMU manipulates
 - For retain-set inputs: keep hidden states close to those of a frozen
   reference model (preservation).
 
-This operates at a deeper level than output-based methods and is
-substantially harder to reverse via benign fine-tuning.
+This operates at a deeper level than output-based methods by steering
+internal representations toward a control direction while preserving
+retain-set representations relative to a frozen snapshot.
 """
 
 from __future__ import annotations
@@ -42,9 +43,12 @@ class RMUStrategy(BaseStrategy):
         Indices of layers (by depth order in ``model.named_modules()``)
         at which to hook.  If None, uses the middle third of the network.
     alpha : float
-        Weight of the forget misdirection loss (default 1.0).
+        Weight of the forget steering loss (default 1.0).
     retain_weight : float
         Weight of the retain representation preservation loss (default 1.0).
+    steering_coefficient : float
+        Norm multiplier for the steering target relative to the current
+        hidden-state norm (default 1.0).
     lr : float
         Learning rate (default 1e-5).
     random_seed : int
@@ -56,6 +60,7 @@ class RMUStrategy(BaseStrategy):
         layer_ids: Optional[List[int]] = None,
         alpha: float = 1.0,
         retain_weight: float = 1.0,
+        steering_coefficient: float = 1.0,
         lr: float = 1e-5,
         random_seed: int = 42,
         **kwargs: Any,
@@ -64,6 +69,7 @@ class RMUStrategy(BaseStrategy):
         self.layer_ids = layer_ids
         self.alpha = alpha
         self.retain_weight = retain_weight
+        self.steering_coefficient = steering_coefficient
         self.lr = lr
         self.random_seed = random_seed
 
@@ -122,18 +128,14 @@ class RMUStrategy(BaseStrategy):
             for batch in forget_loader:
                 inputs = batch[0].to(device)
 
-                # Capture hidden states with forward hooks
                 forget_hidden = self._capture_hidden(model, inputs, hook_layers)
 
-                # Generate random misdirection targets (same shape as hidden states)
-                misdirection_loss = torch.tensor(0.0, device=device)
+                steering_loss = torch.tensor(0.0, device=device)
                 for name, hidden in forget_hidden.items():
-                    target = torch.randn_like(hidden, generator=rng)
-                    target = target / (target.norm(dim=-1, keepdim=True) + 1e-8)
-                    target = target * hidden.norm(dim=-1, keepdim=True).detach()
-                    misdirection_loss = misdirection_loss + F.mse_loss(hidden, target.detach())
+                    target = self._steering_target(hidden, rng)
+                    steering_loss = steering_loss + F.mse_loss(hidden, target)
 
-                loss = self.alpha * misdirection_loss / max(len(forget_hidden), 1)
+                loss = self.alpha * steering_loss / max(len(forget_hidden), 1)
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -149,11 +151,9 @@ class RMUStrategy(BaseStrategy):
                 for batch in retain_loader:
                     inputs = batch[0].to(device)
 
-                    # Reference hidden states (frozen)
                     with torch.no_grad():
                         ref_hidden = self._capture_hidden(ref_model, inputs, hook_layers)
 
-                    # Student hidden states
                     student_hidden = self._capture_hidden(model, inputs, hook_layers)
 
                     preserve_loss = torch.tensor(0.0, device=device)
@@ -204,3 +204,18 @@ class RMUStrategy(BaseStrategy):
                 h.remove()
 
         return captured
+
+    def _steering_target(
+        self,
+        hidden: torch.Tensor,
+        rng: torch.Generator,
+    ) -> torch.Tensor:
+        """Construct a normalized steering vector for a hidden state tensor."""
+        target = torch.randn(hidden.shape, device=hidden.device, dtype=hidden.dtype, generator=rng)
+        flat_hidden = hidden.reshape(hidden.size(0), -1)
+        flat_target = target.reshape(target.size(0), -1)
+
+        hidden_norm = flat_hidden.norm(dim=-1, keepdim=True).clamp_min(1e-8)
+        target_norm = flat_target.norm(dim=-1, keepdim=True).clamp_min(1e-8)
+        scaled = flat_target / target_norm * hidden_norm * self.steering_coefficient
+        return scaled.reshape_as(hidden).detach()

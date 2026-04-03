@@ -17,6 +17,7 @@ from erasus.benchmarks.lm_eval_integration import (
     LMEvalWrapper,
     LMEvalBenchmark,
     BenchmarkComparison,
+    PostUnlearningBenchmarkSuite,
 )
 from erasus.benchmarks.benchmark_runner import (
     BenchmarkRunner,
@@ -35,6 +36,7 @@ __all__ = [
     "LMEvalWrapper",
     "LMEvalBenchmark",
     "BenchmarkComparison",
+    "PostUnlearningBenchmarkSuite",
     "BenchmarkRunner",
     "BenchmarkResult",
     "HuggingFaceModelLoader",

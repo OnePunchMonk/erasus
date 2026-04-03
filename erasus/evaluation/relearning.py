@@ -322,6 +322,8 @@ class LoRARelearningAttack:
         Learning rate (default 1e-3).
     recovery_threshold : float
         Maximum allowed accuracy recovery (default 0.15).
+    related_data_fraction : float
+        Fraction of retain data used as related-data fine-tuning signal.
     """
 
     def __init__(
@@ -330,11 +332,13 @@ class LoRARelearningAttack:
         epochs: int = 3,
         lr: float = 1e-3,
         recovery_threshold: float = 0.15,
+        related_data_fraction: float = 1.0,
     ):
         self.rank = rank
         self.epochs = epochs
         self.lr = lr
         self.recovery_threshold = recovery_threshold
+        self.related_data_fraction = related_data_fraction
 
     def run(
         self,
@@ -347,6 +351,7 @@ class LoRARelearningAttack:
 
         # Baseline
         pre_forget = _compute_metrics(model, forget_data, device)
+        pre_related = _compute_metrics(model, retain_data, device)
 
         # Create LoRA-augmented model
         lora_model = _LoRAWrapper(model, rank=self.rank).to(device)
@@ -363,10 +368,11 @@ class LoRARelearningAttack:
 
         optimizer = torch.optim.Adam(lora_params, lr=self.lr)
         criterion = nn.CrossEntropyLoss()
+        related_loader = _subset_loader(retain_data, self.related_data_fraction)
 
-        # Fine-tune LoRA on retain data
+        # Fine-tune LoRA on related retain-domain data
         for epoch in range(self.epochs):
-            for batch in retain_data:
+            for batch in related_loader:
                 if not isinstance(batch, (list, tuple)) or len(batch) < 2:
                     continue
                 inputs, targets = batch[0].to(device), batch[1].to(device)
@@ -380,7 +386,10 @@ class LoRARelearningAttack:
 
         # Measure post-LoRA metrics
         post_forget = _compute_metrics(lora_model, forget_data, device)
+        post_related = _compute_metrics(lora_model, retain_data, device)
         acc_recovery = post_forget["accuracy"] - pre_forget["accuracy"]
+        loss_recovery = pre_forget["loss"] - post_forget["loss"]
+        concept_revival = acc_recovery + max(loss_recovery, 0.0)
 
         # Count trainable parameters
         n_lora_params = sum(p.numel() for p in lora_params)
@@ -393,15 +402,20 @@ class LoRARelearningAttack:
             "lora_params": int(n_lora_params),
             "total_params": int(n_total_params),
             "lora_param_ratio": float(n_lora_params / max(n_total_params, 1)),
+            "related_data_fraction": float(self.related_data_fraction),
             "pre_forget_accuracy": float(pre_forget["accuracy"]),
             "post_forget_accuracy": float(post_forget["accuracy"]),
+            "pre_related_accuracy": float(pre_related["accuracy"]),
+            "post_related_accuracy": float(post_related["accuracy"]),
             "forget_accuracy_recovery": float(acc_recovery),
-            "passed": acc_recovery < self.recovery_threshold,
+            "forget_loss_recovery": float(loss_recovery),
+            "concept_revival": float(concept_revival),
+            "passed": concept_revival < self.recovery_threshold,
             "interpretation": (
-                f"LoRA (rank {self.rank}) recovered only {acc_recovery:.1%} accuracy (robust)"
-                if acc_recovery < self.recovery_threshold
-                else f"LoRA (rank {self.rank}, {n_lora_params} params) recovered "
-                     f"{acc_recovery:.1%} accuracy — unlearning is shallow"
+                f"LoRA (rank {self.rank}) produced only {concept_revival:.1%} concept revival (robust)"
+                if concept_revival < self.recovery_threshold
+                else f"LoRA (rank {self.rank}, {n_lora_params} params) revived forgotten behavior by "
+                     f"{concept_revival:.1%} after related-data fine-tuning"
             ),
         }
 
@@ -458,6 +472,22 @@ class _LoRAWrapper(nn.Module):
 
     def forward(self, *args: Any, **kwargs: Any) -> Any:
         return self.base_model(*args, **kwargs)
+
+
+def _subset_loader(loader: DataLoader, fraction: float) -> DataLoader:
+    """Create a deterministic prefix subset of a loader's dataset."""
+    fraction = min(max(fraction, 0.0), 1.0)
+    if fraction >= 1.0 or not hasattr(loader, "dataset"):
+        return loader
+
+    dataset = loader.dataset
+    subset_size = max(1, int(len(dataset) * fraction))
+    subset = torch.utils.data.Subset(dataset, list(range(subset_size)))
+    return DataLoader(
+        subset,
+        batch_size=loader.batch_size,
+        shuffle=False,
+    )
 
 
 # ---------------------------------------------------------------------------

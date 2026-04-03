@@ -196,6 +196,16 @@ class TestVerbatimMemorization:
         assert "verbatim_memorization_forget" in results
         assert "verbatim_kl_retain" in results
 
+    def test_overlap_helpers(self):
+        from erasus.metrics.forgetting.memorization import VerbatimMemorizationMetric
+
+        assert VerbatimMemorizationMetric._ngram_overlap(
+            ["a", "b", "c", "d"], ["a", "b", "c", "x"], n=3
+        ) > 0.0
+        assert VerbatimMemorizationMetric._longest_common_substring_ratio(
+            ["a", "b", "c", "d"], ["x", "b", "c", "y"]
+        ) > 0.0
+
 
 # ===================================================================
 # Adversarial Evaluation
@@ -347,6 +357,7 @@ class TestLoRARelearning:
         assert result["test"] == "lora_relearning"
         assert "lora_params" in result
         assert "forget_accuracy_recovery" in result
+        assert "concept_revival" in result
         assert "passed" in result
 
     def test_does_not_modify_original(self, model, forget_loader, retain_loader):
