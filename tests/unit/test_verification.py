@@ -270,6 +270,21 @@ class TestParaphraseRobustness:
         assert "passed" in result
 
 
+class TestPromptEngineeringAttack:
+    def test_runs(self, model, forget_loader):
+        from erasus.evaluation.adversarial import PromptEngineeringAttack
+
+        attack = PromptEngineeringAttack(prompt_styles=["cot", "jailbreak"])
+        result = attack.run(model, forget_loader)
+
+        assert result["test"] == "prompt_engineering"
+        assert "baseline_forget_accuracy" in result
+        assert "cot_accuracy" in result
+        assert "jailbreak_accuracy" in result
+        assert "worst_recovery" in result
+        assert "passed" in result
+
+
 class TestAdversarialEvaluator:
     def test_runs_all(self, model, forget_loader, retain_loader):
         from erasus.evaluation.adversarial import AdversarialEvaluator
@@ -280,6 +295,7 @@ class TestAdversarialEvaluator:
         assert "cross_prompt" in report
         assert "keyword_injection" in report
         assert "paraphrase" in report
+        assert "prompt_engineering" in report
         assert "overall" in report
         assert "tests_passed" in report["overall"]
         assert "verdict" in report["overall"]
@@ -370,6 +386,15 @@ class TestLoRARelearning:
 
         for n, p in model.named_parameters():
             assert torch.equal(p, original_params[n]), f"Original model param {n} was modified"
+
+
+class TestRelearningScaffold:
+    def test_base_attack_import(self):
+        from erasus.evaluation.relearning import BenignFinetuningAttack
+        from erasus.evaluation.relearning.base import BaseRelearningAttack
+
+        attack = BenignFinetuningAttack(epochs=1)
+        assert isinstance(attack, BaseRelearningAttack)
 
 
 class TestPromptExtraction:
@@ -503,6 +528,7 @@ class TestRegistryIntegration:
             CrossPromptLeakageTest,
             KeywordInjectionTest,
             ParaphraseRobustnessTest,
+            PromptEngineeringAttack,
             RelearningRobustnessEvaluator,
             BenignFinetuningAttack,
             QuantizationAttack,
@@ -513,4 +539,5 @@ class TestRegistryIntegration:
         # All imports succeeded
         assert MIASuite is not None
         assert AdversarialEvaluator is not None
+        assert PromptEngineeringAttack is not None
         assert UnlearningVerificationSuite is not None

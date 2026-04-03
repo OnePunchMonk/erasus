@@ -16,8 +16,16 @@ from erasus.strategies.llm_specific.npo import NPOStrategy
 from erasus.strategies.llm_specific.simnpo import SimNPOStrategy
 from erasus.strategies.llm_specific.altpo import AltPOStrategy
 from erasus.strategies.llm_specific.flat import FLATStrategy
+from erasus.strategies.llm_specific.delta_unlearning import (
+    DeltaUnlearningStrategy,
+    DeltaUnlearningWrapper,
+)
 from erasus.strategies.llm_specific.rmu import RMUStrategy
 from erasus.strategies.inference_time.dexperts import DExpertsStrategy, DExpertsWrapper
+from erasus.strategies.inference_time.activation_steering import (
+    ActivationSteeringStrategy,
+    SteeringModel,
+)
 
 
 @pytest.fixture
@@ -480,3 +488,68 @@ class TestDExpertsStrategy:
         # Should proxy to base_model
         if hasattr(base_model, "fc1"):
             assert wrapper.fc1 is base_model.fc1
+
+
+class TestDeltaUnlearningStrategy:
+    """Test delta-unlearning for black-box offset wrapping."""
+
+    def test_registry(self):
+        assert "delta_unlearning" in strategy_registry._registry
+        strategy_cls = strategy_registry.get("delta_unlearning")
+        assert issubclass(strategy_cls, DeltaUnlearningStrategy)
+
+    def test_unlearn_returns_wrapper(self, tiny_classifier, forget_loader):
+        strategy = DeltaUnlearningStrategy(proxy_hidden_dim=32, lr=1e-3)
+        model = tiny_classifier.eval()
+
+        wrapped_model, forget_losses, retain_losses = strategy.unlearn(
+            model=model,
+            forget_loader=forget_loader,
+            epochs=1,
+        )
+
+        assert isinstance(wrapped_model, DeltaUnlearningWrapper)
+        assert len(forget_losses) == 1
+        assert len(retain_losses) == 0
+
+    def test_wrapper_forward(self, tiny_classifier):
+        model = tiny_classifier.eval()
+        proxy = nn.Sequential(
+            nn.Linear(16, 8),
+            nn.ReLU(),
+            nn.Linear(8, 4),
+        ).eval()
+        wrapper = DeltaUnlearningWrapper(model, proxy)
+        inputs = torch.randn(2, 16)
+        outputs = wrapper(inputs)
+        assert outputs.shape == (2, 4)
+        assert wrapper.base_model is model
+
+
+class TestActivationSteeringStrategy:
+    """Test inference-time activation steering."""
+
+    def test_registry(self):
+        assert "activation_steering" in strategy_registry._registry
+        strategy_cls = strategy_registry.get("activation_steering")
+        assert issubclass(strategy_cls, ActivationSteeringStrategy)
+        assert issubclass(strategy_cls, BaseInferenceTimeStrategy)
+
+    def test_unlearn_returns_steering_model(self, tiny_classifier, forget_loader):
+        strategy = ActivationSteeringStrategy(
+            target_layer="middle",
+            steering_strength=0.5,
+            lr=1e-2,
+            num_vectors=1,
+        )
+        model = tiny_classifier.train()
+
+        wrapped_model, forget_losses, retain_losses = strategy.unlearn(
+            model=model,
+            forget_loader=forget_loader,
+            epochs=1,
+        )
+
+        assert isinstance(wrapped_model, SteeringModel)
+        assert len(forget_losses) == 1
+        assert len(retain_losses) == 0

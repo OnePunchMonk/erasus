@@ -2,6 +2,10 @@
 Tests for benchmark suite — TOFU, lm-eval integration, and runners.
 """
 
+import importlib.util
+import json
+from pathlib import Path
+
 import pytest
 import torch
 import torch.nn as nn
@@ -361,3 +365,100 @@ class TestBenchmarkIntegration:
 
         # Check they're different
         assert len(list(f1)) != len(list(f2))
+
+
+class TestRealBenchmarkEntrypoints:
+    """Test importable real benchmark entrypoints with fake local data."""
+
+    @staticmethod
+    def _load_module(path: str, module_name: str):
+        spec = importlib.util.spec_from_file_location(module_name, path)
+        module = importlib.util.module_from_spec(spec)
+        assert spec is not None and spec.loader is not None
+        spec.loader.exec_module(module)
+        return module
+
+    def test_wmdp_run_real_with_fake_scorer(self, tmp_path):
+        module = self._load_module(
+            "/Users/avaya.aggarwal@zomato.com/erasus/benchmarks/wmdp/run_real.py",
+            "wmdp_run_real_test",
+        )
+
+        data_dir = tmp_path / "wmdp"
+        data_dir.mkdir()
+        sample_file = data_dir / "wmdp_bio.json"
+        sample_file.write_text(json.dumps([
+            {
+                "question": "What is 2+2?",
+                "choices": ["3", "4", "5", "6"],
+                "answer": 1,
+            }
+        ]), encoding="utf-8")
+
+        class FakeMCQModel:
+            name_or_path = "fake-zephyr"
+
+            def score_choices(self, prompt, choices):
+                return [0.0, 10.0, 0.0, 0.0]
+
+        results = module.run_real_wmdp(
+            subset="bio",
+            data_dir=str(data_dir),
+            model=FakeMCQModel(),
+            tokenizer=object(),
+            max_samples=1,
+        )
+
+        assert results["benchmark"] == "wmdp_real"
+        assert results["accuracy"] == 1.0
+
+    def test_muse_run_real_on_local_split_files(self, tmp_path):
+        module = self._load_module(
+            "/Users/avaya.aggarwal@zomato.com/erasus/benchmarks/muse/run_real.py",
+            "muse_run_real_test",
+        )
+
+        data_dir = tmp_path / "muse" / "news"
+        data_dir.mkdir(parents=True)
+        for split in ("forget", "retain", "holdout", "test"):
+            (data_dir / f"{split}.json").write_text(
+                json.dumps([{"text": f"{split} sample text"}]),
+                encoding="utf-8",
+            )
+
+        class FakeTokenizer:
+            def __call__(self, text, max_length=None, truncation=None, padding=None, return_tensors=None):
+                return {
+                    "input_ids": torch.tensor([[1, 2, 3, 4]]),
+                    "attention_mask": torch.ones(1, 4),
+                }
+
+        class FakeLM(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.anchor = nn.Parameter(torch.zeros(1))
+
+            def forward(self, input_ids=None, attention_mask=None, labels=None):
+                logits = torch.zeros(input_ids.size(0), input_ids.size(1), 8, device=input_ids.device)
+                loss = torch.tensor(1.0, device=input_ids.device)
+                return type("Output", (), {"loss": loss, "logits": logits})()
+
+        results = module.run_real_muse(
+            subset="news",
+            data_dir=str(tmp_path / "muse"),
+            model=FakeLM(),
+            tokenizer=FakeTokenizer(),
+            batch_size=1,
+            max_length=8,
+        )
+
+        assert results["benchmark"] == "muse_real"
+        assert "six_way" in results
+        assert set(results["six_way"]) == {
+            "forget_quality",
+            "model_utility",
+            "privacy_leakage",
+            "knowledge_retention",
+            "consistency",
+            "efficiency",
+        }

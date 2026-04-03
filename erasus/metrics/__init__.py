@@ -26,6 +26,7 @@ from erasus.metrics.efficiency.time_complexity import TimeComplexityMetric
 from erasus.metrics.efficiency.memory_usage import MemoryUsageMetric
 from erasus.metrics.privacy.differential_privacy import DPEvaluationMetric
 from erasus.metrics.privacy.privacy_leakage import PrivacyLeakageMetric
+from erasus.metrics.privacy.rag_leakage import RAGLeakageMetric
 
 # Sprint A metrics
 from erasus.metrics.forgetting.activation_analysis import ActivationAnalysis
@@ -51,6 +52,7 @@ from erasus.metrics.forgetting.memorization import (
     ExactMemorizationMetric,
     VerbatimMemorizationMetric,
 )
+from erasus.metrics.forgetting.knowmem import KnowMemMetric
 
 # Issue #41: Cross-prompt leakage test
 from erasus.metrics.forgetting.cross_prompt_leakage import CrossPromptLeakageMetric
@@ -76,10 +78,12 @@ for name, cls in [
     ("memory_usage", MemoryUsageMetric),
     ("dp_evaluation", DPEvaluationMetric),
     ("privacy_leakage", PrivacyLeakageMetric),
+    ("rag_leakage", RAGLeakageMetric),
     ("mia_suite", MIASuite),
     ("extraction_strength", ExtractionStrengthMetric),
     ("exact_memorization", ExactMemorizationMetric),
     ("verbatim_memorization", VerbatimMemorizationMetric),
+    ("knowmem", KnowMemMetric),
     ("cross_prompt_leakage", CrossPromptLeakageMetric),
     ("benign_finetuning", BenignFinetuningMetric),
 ]:
@@ -106,6 +110,7 @@ __all__ = [
     "MemoryUsageMetric",
     "DPEvaluationMetric",
     "PrivacyLeakageMetric",
+    "RAGLeakageMetric",
     # Sprint A
     "ActivationAnalysis",
     "BackdoorActivation",
@@ -126,6 +131,7 @@ __all__ = [
     "ExtractionStrengthMetric",
     "ExactMemorizationMetric",
     "VerbatimMemorizationMetric",
+    "KnowMemMetric",
     # Issue #41
     "CrossPromptLeakageMetric",
     # Issue #46
