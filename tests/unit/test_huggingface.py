@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import torch
 
 
 class TestHuggingFaceHubInit:
@@ -128,3 +129,32 @@ class TestIntegrationsPackage:
         assert hasattr(hub, "load_dataset")
         assert hasattr(hub, "dataset_to_dataloader")
         assert hasattr(hub, "list_erasus_models")
+
+
+class TestCheckpointPush:
+    """Test checkpoint push helper."""
+
+    def test_push_checkpoint_missing_file(self, tmp_path):
+        from erasus.core.exceptions import CheckpointError
+        from erasus.integrations.huggingface import HuggingFaceHub
+
+        hub = HuggingFaceHub()
+        with pytest.raises(CheckpointError):
+            hub.push_checkpoint(tmp_path / "missing.pt", repo_id="user/test")
+
+    def test_push_checkpoint_delegates_to_push_model(self, tmp_path):
+        from erasus.integrations.huggingface import HuggingFaceHub
+
+        checkpoint = tmp_path / "model.pt"
+        torch.save({"weight": torch.tensor([1.0])}, checkpoint)
+        hub = HuggingFaceHub()
+
+        with patch.object(hub, "push_model", return_value="https://huggingface.co/user/test") as mocked:
+            url = hub.push_checkpoint(
+                checkpoint,
+                repo_id="user/test",
+                unlearning_info={"strategy": "gradient_ascent"},
+            )
+
+        mocked.assert_called_once()
+        assert url.endswith("user/test")

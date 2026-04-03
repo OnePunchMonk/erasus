@@ -17,6 +17,8 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+from erasus.core.exceptions import CheckpointError, IntegrationError
+
 logger = logging.getLogger(__name__)
 
 
@@ -101,7 +103,7 @@ model = hub.pull_model("{repo_id}")
 
                 self._api = HfApi(token=self.token)
             except ImportError:
-                raise ImportError(
+                raise IntegrationError(
                     "huggingface_hub is required for Hub integration. "
                     "Install it with: pip install huggingface_hub"
                 )
@@ -172,6 +174,34 @@ model = hub.pull_model("{repo_id}")
         url = f"https://huggingface.co/{repo_id}"
         logger.info("Model pushed to %s", url)
         return url
+
+    def push_checkpoint(
+        self,
+        checkpoint_path: Union[str, Path],
+        repo_id: str,
+        *,
+        unlearning_info: Optional[Dict[str, Any]] = None,
+        commit_message: str = "Upload unlearned checkpoint via Erasus",
+        private: bool = False,
+        create_model_card: bool = True,
+    ) -> str:
+        """
+        Push a saved checkpoint file to the HuggingFace Hub.
+
+        This is a convenience wrapper around ``push_model`` that validates the
+        checkpoint path and keeps the model-card generation flow consistent.
+        """
+        checkpoint = Path(checkpoint_path)
+        if not checkpoint.exists():
+            raise CheckpointError(f"Checkpoint path does not exist: {checkpoint}")
+        return self.push_model(
+            checkpoint,
+            repo_id=repo_id,
+            unlearning_info=unlearning_info,
+            commit_message=commit_message,
+            private=private,
+            create_model_card=create_model_card,
+        )
 
     # ------------------------------------------------------------------
     # Pull
@@ -290,7 +320,7 @@ model = hub.pull_model("{repo_id}")
         try:
             from datasets import load_dataset as hf_load_dataset
         except ImportError:
-            raise ImportError(
+            raise IntegrationError(
                 "The 'datasets' library is required. "
                 "Install it with: pip install datasets"
             )

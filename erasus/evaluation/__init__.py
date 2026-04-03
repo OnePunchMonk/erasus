@@ -17,8 +17,10 @@ verification_suite
 
 from erasus.evaluation.adversarial import (
     AdversarialEvaluator,
+    BaseAdversarialTest,
     CrossPromptLeakageTest,
     KeywordInjectionTest,
+    MultilingualLeakageTest,
     ParaphraseRobustnessTest,
     PromptEngineeringAttack,
 )
@@ -40,8 +42,10 @@ from erasus.evaluation.benchmark_protocol import (
 
 __all__ = [
     "AdversarialEvaluator",
+    "BaseAdversarialTest",
     "CrossPromptLeakageTest",
     "KeywordInjectionTest",
+    "MultilingualLeakageTest",
     "ParaphraseRobustnessTest",
     "PromptEngineeringAttack",
     "RelearningRobustnessEvaluator",
